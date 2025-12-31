@@ -11,6 +11,9 @@ export const initializeFirestore = (): FirebaseFirestore.Firestore => {
   if (db) return db;
 
   try {
+    // Debug: Print available env vars (keys only)
+    console.log('configured env vars:', Object.keys(process.env).join(', '));
+
     // Try to load service account from file
     const serviceAccountPath = path.join(__dirname, '../../credentials/firebase-adminsdk.json');
     
