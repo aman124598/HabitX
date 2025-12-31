@@ -6,7 +6,7 @@
     "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/logo-minimal.png",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.png",
+        "foregroundImage": "./assets/images/logo-minimal.png",
         "backgroundColor": "#E5A317"
       },
       "package": "com.aman1298.habitx",

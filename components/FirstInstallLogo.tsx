@@ -34,7 +34,7 @@ const FirstInstallLogo: React.FC<Props> = ({ onFinish, duration = 2200 }) => {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <Animated.View style={[styles.logoWrap, { opacity, transform: [{ scale }] }]}>
         <Image
-          source={require('../assets/images/logo.png')}
+          source={require('../assets/images/logo-minimal.png')}
           style={styles.logo}
           resizeMode="contain"
         />
