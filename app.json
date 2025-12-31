@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "Habit X",
+    "slug": "habitx",
+    "scheme": "habitx",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/images/logo.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aman1298.habitx",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundColor": "#E5A317"
+      },
+      "package": "com.aman1298.habitx",
+      "versionCode": 2,
+      "permissions": [
+        "NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "SYSTEM_ALERT_WINDOW",
+        "WAKE_LOCK"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://aman1298.com"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#E5A317"
+        }
+      ],
+      "expo-background-fetch",
+      "expo-task-manager"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "d4a557dc-d95c-4ed3-a07e-82d588a222a0"
+      }
+    },
+    "owner": "aman1298"
+  }
+}

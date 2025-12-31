@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1011701747502",
+    "project_id": "habitx-ba1d8",
+    "storage_bucket": "habitx-ba1d8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1011701747502:android:e8d4eba5498b90eae674bf",
+        "android_client_info": {
+          "package_name": "com.aman1298.habitx"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1011701747502-9nod5hmp6dfutjnvra948ts928nml8ct.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwaH0WenuV_DNmSNM6gPz8QtxiIj6X_gk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1011701747502-9nod5hmp6dfutjnvra948ts928nml8ct.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

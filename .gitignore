@@ -1,0 +1,13 @@
+node_modules/
+.expo/
+dist/
+web-build/
+.expo-shared/
+.env*
+*.log
+.DS_Store
+android/local.properties
+backend/credentials/firebase-adminsdk.json
+backend/credentials/serviceAccountKey.json
+credentials/
+

@@ -1,0 +1,37 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath('com.android.tools.build:gradle:8.7.3')
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.25')
+    // Add the dependency for the Google services Gradle plugin
+    classpath('com.google.gms:google-services:4.4.4')
+  }
+}
+
+allprojects {
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+  }
+
+  // Workaround: JitPack can intermittently return 500 for BlurView.
+  // Substitute the JitPack artifact with the Maven Central artifact to make builds reliable.
+  configurations.all {
+    resolutionStrategy.eachDependency { details ->
+      if (details.requested.group == 'com.github.Dimezis' && details.requested.name == 'BlurView') {
+        details.useTarget 'com.eightbitlab:blurview:2.0.6'
+        details.because 'Use Maven Central BlurView to avoid JitPack 500 errors during EAS builds'
+      }
+    }
+  }
+}
+
+apply plugin: "expo-root-project"
+apply plugin: "com.facebook.react.rootproject"

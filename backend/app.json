@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "efb4b60f-9d6e-4486-8a3d-390acf7d4afa"
+      }
+    },
+    "android": {
+      "package": "com.aman1298.habittrackerbackend"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+# EAS Build ignore file (uploaded to Expo/EAS servers)
+# Exclude files and folders that are not needed for the remote build and only slow uploads or contain local secrets.
+
+# Node modules (these are installed on the build servers)
+node_modules/
+.pnpm-store/
+.yarn/
+package-lock.json
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
+
+# Local development and editor files
+.vscode/
+.idea/
+*.iml
+.DS_Store
+*.log
+
+# Gradle / Android build artifacts and caches
+.gradle/
+# Exclude entire native Android folder to enable CNG/Prebuild on EAS Build.
+# If you want to keep building the committed native project, remove the next line.
+android/
+android/.gradle/
+android/.cxx/
+android/build/
+android/app/build/
+**/build/
+
+# iOS build artifacts
+ios/Pods/
+ios/build/
+*.xcworkspace/
+*.xcodeproj/xcuserdata/
+
+# Expo / Metro caches and local bundles
+.expo/
+.expo-shared/
+.expo-debug/
+.expo-local/
+metro-cache/
+
+# Coverage, reports, and temporary files
+coverage/
+reports/
+tmp/
+
+# Local SDK/keystore (do not upload secrets) — use EAS secrets or credentials instead
+*.keystore
+*.jks
+debug.keystore
+your_keystore.jks
+local.properties
+
+# Misc
+*.zip
+*.tar.gz
+*.map
+
+# Keep package.json, lockfiles and eas.json so the build server can install deps and run EAS config
+# (do NOT ignore package.json, yarn.lock, or eas.json)
+
+# End of .easignore

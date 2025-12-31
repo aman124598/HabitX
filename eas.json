@@ -1,0 +1,46 @@
+{
+  "cli": {
+    "version": ">= 16.17.4",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "production-apk": {
+      "distribution": "store",
+      "env": { "NODE_VERSION": "20.19.4" },
+      "android": {
+        "buildType": "apk"
+      },
+      "autoIncrement": true
+    },
+    "production-aab": {
+      "distribution": "store",
+      "env": { "NODE_VERSION": "20.19.4" },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "autoIncrement": true
+    },
+    "production": {
+      "distribution": "store",
+      "env": { "NODE_VERSION": "20.19.4" },
+      "android": {}
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": { "NODE_VERSION": "20.19.4" }
+    },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": { "NODE_VERSION": "20.19.4" }
+    }
+  },
+  "submit": {
+    "production-aab": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "production"
+      }
+    }
+  }
+}
