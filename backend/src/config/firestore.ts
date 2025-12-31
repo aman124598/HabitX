@@ -27,13 +27,32 @@ export const initializeFirestore = (): FirebaseFirestore.Firestore => {
       // If no service account file, try environment variables
       console.log('📝 No service account file found, trying environment variables...');
       
-      if (process.env.FIREBASE_PROJECT_ID) {
+      // OPTION 1: Base64 Encoded Service Account
+      if (process.env.FIREBASE_CREDENTIALS_BASE64) {
+        try {
+          const buffer = Buffer.from(process.env.FIREBASE_CREDENTIALS_BASE64, 'base64');
+          const serviceAccount = JSON.parse(buffer.toString('utf-8'));
+          
+          adminApp = admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            projectId: serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID,
+          });
+          console.log('✅ Firebase Admin SDK initialized from Base64 env var');
+          
+        } catch (base64Error) {
+          console.error('❌ Failed to parse FIREBASE_CREDENTIALS_BASE64 value:', base64Error);
+          // Fall through to other methods is possible, but this usually implies configuration error
+        }
+      } 
+      
+      // OPTION 2: Project ID only (for Google Cloud Platform / specific environments)
+      else if (process.env.FIREBASE_PROJECT_ID) {
         adminApp = admin.initializeApp({
           projectId: process.env.FIREBASE_PROJECT_ID,
         });
         console.log('✅ Firebase Admin SDK initialized from environment variables');
       } else {
-        throw new Error('No Firebase credentials found. Please provide either a service account file or environment variables.');
+        throw new Error('No Firebase credentials found. Please provide FIREBASE_CREDENTIALS_BASE64 or service account file.');
       }
     }
 
