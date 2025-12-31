@@ -13,61 +13,88 @@ export const initializeFirestore = (): FirebaseFirestore.Firestore => {
   try {
     // Debug: Print available env vars (keys only)
     console.log('configured env vars:', Object.keys(process.env).join(', '));
-
-    // Try to load service account from file
-    const serviceAccountPath = path.join(__dirname, '../../credentials/firebase-adminsdk.json');
     
-    try {
-      const serviceAccount = require(serviceAccountPath);
-      
-      adminApp = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-        projectId: serviceAccount.project_id,
-      });
-      
-      console.log('✅ Firebase Admin SDK initialized from service account file');
-    } catch (fileError) {
-      // If no service account file, try environment variables
-      console.log('📝 No service account file found, trying environment variables...');
-      
-      // OPTION 1: Base64 Encoded Service Account
-      if (process.env.FIREBASE_CREDENTIALS_BASE64) {
+    // Try to load local service account from file (Development default)
+    const localServiceAccountPath = path.join(__dirname, '../../credentials/firebase-adminsdk.json');
+    
+    // --- STRATEGY 1: Render Secret File ---
+    const renderSecretPath = '/etc/secrets/firebase-adminsdk.json';
+    const fs = require('fs');
+    if (!adminApp && fs.existsSync(renderSecretPath)) {
+        console.log(`Checking Render secret file at: ${renderSecretPath}`);
         try {
-          const buffer = Buffer.from(process.env.FIREBASE_CREDENTIALS_BASE64, 'base64');
-          const serviceAccount = JSON.parse(buffer.toString('utf-8'));
-          
-          adminApp = admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            projectId: serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID,
-          });
-          console.log('✅ Firebase Admin SDK initialized from Base64 env var');
-          
-        } catch (base64Error) {
-          console.error('❌ Failed to parse FIREBASE_CREDENTIALS_BASE64 value:', base64Error);
-          // Fall through to other methods is possible, but this usually implies configuration error
+            const fileContent = fs.readFileSync(renderSecretPath, 'utf8');
+            console.log(`Render Secret File length: ${fileContent.length}`);
+            console.log(`Render Secret Start: ${fileContent.substring(0, 20)}...`);
+            
+            const serviceAccount = JSON.parse(fileContent);
+             adminApp = admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                projectId: serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID,
+            });
+            console.log('✅ Firebase Admin SDK initialized from Render Secret File');
+        } catch (err) {
+             console.error(`❌ Error reading/parsing Render secret file: ${err}`);
         }
-      } 
-      
-      // OPTION 2: Project ID only (for Google Cloud Platform / specific environments)
-      else if (process.env.FIREBASE_PROJECT_ID) {
+    }
+
+    // --- STRATEGY 2: Base64 Encoded Service Account ---
+    if (!adminApp && process.env.FIREBASE_CREDENTIALS_BASE64) {
+      try {
+        const buffer = Buffer.from(process.env.FIREBASE_CREDENTIALS_BASE64, 'base64');
+        const serviceAccount = JSON.parse(buffer.toString('utf-8'));
+        
         adminApp = admin.initializeApp({
-          projectId: process.env.FIREBASE_PROJECT_ID,
+          credential: admin.credential.cert(serviceAccount),
+          projectId: serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID,
         });
-        console.log('✅ Firebase Admin SDK initialized from environment variables');
-      } else {
-        throw new Error('No Firebase credentials found. Please provide FIREBASE_CREDENTIALS_BASE64 or service account file.');
+        console.log('✅ Firebase Admin SDK initialized from Base64 env var');
+      } catch (base64Error) {
+        console.error('❌ Failed to parse FIREBASE_CREDENTIALS_BASE64 value:', base64Error);
       }
+    } 
+    
+    // --- STRATEGY 3: Project ID only (for Google Cloud Platform / specific environments) ---
+    if (!adminApp && process.env.FIREBASE_PROJECT_ID) {
+      // This only works if we are inside GCP authentication scope or have GOOGLE_APPLICATION_CREDENTIALS set validly
+      // We assume if users try this, they know what they are doing.
+       try {
+          adminApp = admin.initializeApp({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+          });
+          console.log('✅ Firebase Admin SDK initialized from environment variables (Project ID only)');
+       } catch (err) {
+           console.log('⚠️ Failed to init with Project ID only (expected if not on GCP):', err);
+       }
+    } 
+    
+    // --- STRATEGY 4: Local File (Last Resort) ---
+    if (!adminApp) {
+        try {
+             // check existence first to avoid require error
+             if (fs.existsSync(localServiceAccountPath)) {
+                 const serviceAccount = require(localServiceAccountPath);
+                 adminApp = admin.initializeApp({
+                    credential: admin.credential.cert(serviceAccount),
+                    projectId: serviceAccount.project_id,
+                 });
+                 console.log('✅ Firebase Admin SDK initialized from local file');
+             }
+        } catch (e) {
+             console.log('⚠️ Local credential file not found or invalid.');
+        }
+    }
+
+    // --- FINAL CHECK ---
+    if (!adminApp) {
+        throw new Error('FATAL: No valid Firebase credentials found. Checked: Render Secret, Base64 Env, Project ID Env, Local File.');
     }
 
     db = admin.firestore();
-    
-    // Configure Firestore settings
-    db.settings({
-      ignoreUndefinedProperties: true,
-    });
-
+    db.settings({ ignoreUndefinedProperties: true });
     console.log('✅ Firestore database connected');
     return db;
+
   } catch (error) {
     console.error('❌ Failed to initialize Firestore:', error);
     throw error;
