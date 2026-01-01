@@ -231,16 +231,6 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
             transform: [{ scale: logoScale }] 
           }
         ]}>
-          <LinearGradient
-            colors={['#8B5CF6', '#A78BFA', '#C4B5FD']}
-            style={styles.logoGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <View style={styles.logoInner}>
-              <Text style={styles.logoLetter}>H</Text>
-            </View>
-          </LinearGradient>
           <View style={styles.brandTextContainer}>
             <Text style={styles.brandText}>HABIT</Text>
             <LinearGradient
