@@ -53,12 +53,9 @@ export async function createFirebaseUser(email: string, password: string) {
 
 export async function sendVerificationToUser(user: FirebaseUser, continueUrl?: string) {
   try {
-    const actionCodeSettings = {
-      url: continueUrl || (process.env.EXPO_PUBLIC_APP_URL || process.env.APP_URL || 'https://habit-tracker-backend-2.onrender.com') + '/verify-email',
-      handleCodeInApp: true,
-    } as any;
-
-    return sendEmailVerification(user, actionCodeSettings as any);
+    // Use a simple URL without actionCodeSettings to avoid domain whitelisting issues
+    // Firebase will use its default email template
+    return sendEmailVerification(user);
   } catch (error) {
     console.error('Error sending Firebase verification email:', error);
     throw error;
@@ -94,12 +91,9 @@ export async function signOut() {
  */
 export async function sendPasswordReset(email: string) {
   try {
-    const actionCodeSettings = {
-      url: (process.env.EXPO_PUBLIC_APP_URL || process.env.APP_URL || 'https://habit-tracker-backend-2.onrender.com') + '/reset-password',
-      handleCodeInApp: true,
-    } as any;
-
-    await sendPasswordResetEmail(auth, email, actionCodeSettings);
+    // Send without actionCodeSettings to avoid domain whitelisting issues
+    // Firebase will use its default email template and handle the flow
+    await sendPasswordResetEmail(auth, email);
     console.log('✅ Password reset email sent via Firebase');
   } catch (error) {
     console.error('❌ Error sending password reset email:', error);
