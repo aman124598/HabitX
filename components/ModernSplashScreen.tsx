@@ -18,8 +18,7 @@ interface ModernSplashScreenProps {
 
 const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComplete }) => {
   // Animation values
-  const logoScale = useRef(new Animated.Value(0)).current;
-  const logoRotation = useRef(new Animated.Value(0)).current;
+
   const textOpacity = useRef(new Animated.Value(0)).current;
   const textTranslateY = useRef(new Animated.Value(30)).current;
   const progressWidth = useRef(new Animated.Value(0)).current;
@@ -42,18 +41,7 @@ const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComp
     });
 
     // Logo animations
-    const logoAnimation = Animated.sequence([
-      Animated.timing(logoScale, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoRotation, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-    ]);
+
 
     // Text animations
     const textAnimation = Animated.parallel([
@@ -100,10 +88,8 @@ const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComp
 
     // Execute all animations
     backgroundAnimation.start();
-    logoAnimation.start(() => {
-      textAnimation.start();
-      progressAnimation.start();
-    });
+    textAnimation.start();
+    progressAnimation.start();
     circleAnimations.start();
 
     // Complete splash screen
@@ -116,10 +102,7 @@ const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComp
     };
   }, []);
 
-  const rotationInterpolation = logoRotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+
 
   const progressInterpolation = progressWidth.interpolate({
     inputRange: [0, 1],
@@ -166,26 +149,6 @@ const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComp
 
       {/* Main content */}
       <View style={styles.content}>
-        {/* Logo */}
-        <Animated.View
-          style={[
-            styles.logoContainer,
-            {
-              transform: [
-                { scale: logoScale },
-                { rotate: rotationInterpolation },
-              ],
-            },
-          ]}
-        >
-          <LinearGradient
-            colors={['#ffffff', '#f0f0f0']}
-            style={styles.logoGradient}
-          >
-            <Ionicons name="checkmark-circle" size={70} color="#667eea" />
-          </LinearGradient>
-        </Animated.View>
-
         {/* Text content */}
         <Animated.View
           style={[
@@ -196,7 +159,17 @@ const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComp
             },
           ]}
         >
-          <Text style={styles.title}>Habit Tracker</Text>
+          <View style={styles.brandContainer}>
+            <Text style={styles.title}>HABIT</Text>
+            <LinearGradient
+              colors={['#8B5CF6', '#06B6D4']}
+              style={styles.xContainer}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.titleX}>X</Text>
+            </LinearGradient>
+          </View>
           <Text style={styles.subtitle}>Transform your life, one habit at a time</Text>
         </Animated.View>
 
@@ -251,35 +224,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  logoContainer: {
-    marginBottom: 40,
-  },
-  logoGradient: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 15,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 25,
-    elevation: 15,
-  },
   textContainer: {
     alignItems: 'center',
     marginBottom: 60,
+  },
+  brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  xContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 6,
+  },
+  titleX: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 2,
   },
   title: {
     fontSize: 36,
     fontWeight: '700',
     color: '#ffffff',
     textAlign: 'center',
-    marginBottom: 12,
-    letterSpacing: 2,
+    letterSpacing: 4,
     textShadowColor: 'rgba(0, 0, 0, 0.4)',
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 6,

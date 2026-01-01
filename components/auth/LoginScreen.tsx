@@ -454,28 +454,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  logoGradient: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 3,
-    marginBottom: 16,
-  },
-  logoInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 21,
-    backgroundColor: '#1a1a2e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoLetter: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: '#A78BFA',
-  },
   brandTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',

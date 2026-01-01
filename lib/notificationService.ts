@@ -8,7 +8,7 @@ import SafeNotifications from './safeNotifications';
 // Configure notifications safely
 SafeNotifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowBanner: true,
+    shouldShowBanner: false,
     shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,

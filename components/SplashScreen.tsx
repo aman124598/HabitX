@@ -19,8 +19,7 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
   // Animation values
-  const logoScale = useRef(new Animated.Value(0.3)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
+
   const logoGlow = useRef(new Animated.Value(0)).current;
   const ringScale1 = useRef(new Animated.Value(0.5)).current;
   const ringScale2 = useRef(new Animated.Value(0.5)).current;
@@ -69,19 +68,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
 
     // Main entrance sequence
     const mainSequence = Animated.sequence([
-      // Logo entrance with bounce
+      // Title entrance
       Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          tension: 60,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
+        Animated.spring(titleTranslateY, { toValue: 0, tension: 80, friction: 12, useNativeDriver: true }),
+        Animated.timing(titleOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
       ]),
 
       // Pulsing rings
@@ -109,11 +99,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
         ]),
       ]),
 
-      // Title entrance
-      Animated.parallel([
-        Animated.spring(titleTranslateY, { toValue: 0, tension: 80, friction: 12, useNativeDriver: true }),
-        Animated.timing(titleOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ]),
+
 
       // Subtitle entrance
       Animated.delay(100),
@@ -300,50 +286,30 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
             { opacity: glowOpacity },
           ]}
         />
-
-        {/* Logo */}
+        
+        {/* Title Centered */}
         <Animated.View
           style={[
-            styles.logoContainer,
+            styles.titleContainer,
             {
-              transform: [{ scale: logoScale }],
-              opacity: logoOpacity,
+              transform: [{ translateY: titleTranslateY }],
+              opacity: titleOpacity,
             },
           ]}
         >
+          <Text style={styles.title}>HABIT</Text>
           <LinearGradient
-            colors={["#8B5CF6", "#A78BFA", "#C4B5FD"]}
-            style={styles.logoGradient}
+            colors={["#8B5CF6", "#06B6D4"]}
+            style={styles.titleGradientContainer}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            end={{ x: 1, y: 0 }}
           >
-            <View style={styles.logoInner}>
-              <Text style={styles.logoText}>H</Text>
-            </View>
+            <Text style={styles.titleX}>X</Text>
           </LinearGradient>
         </Animated.View>
       </View>
 
-      {/* Title */}
-      <Animated.View
-        style={[
-          styles.titleContainer,
-          {
-            transform: [{ translateY: titleTranslateY }],
-            opacity: titleOpacity,
-          },
-        ]}
-      >
-        <Text style={styles.title}>HABIT</Text>
-        <LinearGradient
-          colors={["#8B5CF6", "#06B6D4"]}
-          style={styles.titleGradientContainer}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        >
-          <Text style={styles.titleX}>X</Text>
-        </LinearGradient>
-      </Animated.View>
+
 
       {/* Subtitle */}
       <Animated.View
@@ -422,9 +388,7 @@ const styles = StyleSheet.create({
   logoSection: {
     alignItems: "center",
     justifyContent: "center",
-    width: 200,
-    height: 200,
-    marginBottom: 40,
+    marginBottom: 60,
   },
   ring: {
     position: "absolute",
@@ -445,35 +409,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 40,
   },
-  logoContainer: {
-    ...getShadow("xl"),
-  },
-  logoGradient: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 4,
-  },
-  logoInner: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 56,
-    backgroundColor: "#1a1a2e",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoText: {
-    fontSize: 56,
-    fontWeight: "800",
-    color: "#A78BFA",
-    letterSpacing: -2,
-  },
+
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
   },
   title: {
     fontSize: 42,

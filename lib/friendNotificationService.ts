@@ -60,7 +60,7 @@ class FriendNotificationService {
         const isFriendNotification = notification.request.content.data?.category === 'friend';
         
         return {
-          shouldShowBanner: true,
+          shouldShowBanner: false,
           shouldShowList: true,
           shouldPlaySound: this.settings.soundEnabled && isFriendNotification,
           shouldSetBadge: true,

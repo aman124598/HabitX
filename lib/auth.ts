@@ -125,10 +125,10 @@ class AuthService {
         body: JSON.stringify(credentials),
       });
 
-      // CRITICAL FIX: If user not found in MongoDB but exists in Firebase with verified email,
-      // create the MongoDB user automatically
+      // CRITICAL FIX: If user not found in Backend DB but exists in Firebase with verified email,
+      // create the Backend user automatically
       if (!response.ok && response.status === 401 && firebaseSignInSuccessful && firebaseUser?.emailVerified) {
-        console.log('🔄 Firebase auth successful but backend rejected - auto-creating MongoDB user');
+        console.log('🔄 Firebase auth successful but backend rejected - auto-creating Backend user');
         console.log('   - Firebase user verified:', firebaseUser.emailVerified);
         console.log('   - Firebase UID:', firebaseUser.uid);
         
@@ -144,10 +144,10 @@ class AuthService {
           console.log('⚠️ No pending registration data, using default username:', username);
         }
         
-        // Try to create MongoDB user
+        // Try to create Backend user
         try {
           const registerUrl = getApiUrl('/auth/register');
-          console.log('🔐 Auto-registering user in MongoDB:', registerUrl);
+          console.log('🔐 Auto-registering user in Backend:', registerUrl);
           
           const registerResponse = await fetch(registerUrl, {
             method: 'POST',
@@ -175,14 +175,14 @@ class AuthService {
             this.token = registerData.data.token;
             this.user = registerData.data.user;
 
-            console.log('✅ MongoDB user auto-created successfully');
+            console.log('✅ Backend user auto-created successfully');
             return registerData.data.user;
           } else {
             const errorText = await registerResponse.text();
-            console.error('❌ Failed to auto-create MongoDB user:', registerResponse.status, errorText);
+            console.error('❌ Failed to auto-create Backend user:', registerResponse.status, errorText);
           }
         } catch (createErr) {
-          console.error('❌ Exception auto-creating MongoDB user:', createErr);
+          console.error('❌ Exception auto-creating Backend user:', createErr);
         }
       }
 
@@ -261,7 +261,7 @@ class AuthService {
         throw new Error('Failed to send verification email. Please try again.');
       }
 
-      // 3) DO NOT create user in MongoDB yet - user must verify email first
+      // 3) DO NOT create user in Backend DB yet - user must verify email first
       // Store temporary registration data in AsyncStorage so we can complete registration after verification
       await AsyncStorage.setItem('pending_registration', JSON.stringify({
         username: credentials.username,
@@ -270,7 +270,7 @@ class AuthService {
         timestamp: Date.now(),
       }));
 
-      console.log('✅ Firebase user created. Waiting for email verification before MongoDB sync.');
+      console.log('✅ Firebase user created. Waiting for email verification before Backend sync.');
       
       // Return a placeholder user object indicating pending verification
       // The UI will show "verify your email" screen
@@ -566,7 +566,7 @@ class AuthService {
         throw new Error('No Firebase session. Please log in with your credentials to complete setup.');
       }
 
-      // 3. Call backend to create MongoDB user (backend will verify Firebase email is verified)
+      // 3. Call backend to create Backend user (backend will verify Firebase email is verified)
       const url = getApiUrl('/auth/register');
       const response = await fetch(url, {
         method: 'POST',
@@ -594,7 +594,7 @@ class AuthService {
         throw new Error(data.message || 'Failed to complete registration');
       }
 
-      // 4. Store MongoDB user and token
+      // 4. Store Backend user and token
       await AsyncStorage.setItem(TOKEN_KEY, data.data.token);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
       await AsyncStorage.removeItem('pending_registration');
@@ -602,7 +602,7 @@ class AuthService {
       this.token = data.data.token;
       this.user = data.data.user;
 
-      console.log('✅ Email verified and user synced to MongoDB');
+      console.log('✅ Email verified and user synced to Backend');
       return data.data.user;
     } catch (error) {
       console.error('Verify email error (frontend):', error);

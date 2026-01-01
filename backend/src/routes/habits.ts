@@ -84,8 +84,8 @@ const bulkToggleValidation = [
     .isArray({ min: 1 })
     .withMessage('Habit IDs array is required and must not be empty')
     .custom((value) => {
-      if (value.some((id: any) => typeof id !== 'string' || id.length !== 24)) {
-        throw new Error('All habit IDs must be valid MongoDB ObjectIds');
+      if (value.some((id: any) => typeof id !== 'string' || id.length === 0)) {
+        throw new Error('All habit IDs must be valid strings');
       }
       return true;
     }),

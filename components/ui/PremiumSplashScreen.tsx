@@ -228,54 +228,31 @@ export const PremiumSplashScreen: React.FC<PremiumSplashScreenProps> = ({
 
       {/* Main Content Container */}
       <BlurView intensity={20} style={styles.contentContainer}>
-        {/* Logo Container */}
-        <Animated.View
-          style={[
-            styles.logoContainer,
-            {
-              opacity: fadeAnim,
-              transform: [
-                { scale: scaleAnim },
-                { scale: pulseAnim },
-              ],
-            },
-          ]}
-        >
-          {/* Logo Background Glow */}
-          <View style={styles.logoGlow} />
-          
-          {/* Logo */}
-          <View style={styles.logo}>
-            <LinearGradient
-              colors={['#FFD700', '#FFA500', '#FF6347']}
-              style={styles.logoGradient}
-            >
-              <Text style={styles.logoText}>H</Text>
-            </LinearGradient>
-          </View>
-
-          {/* Shimmer Effect */}
-          <Animated.View
-            style={[
-              styles.shimmer,
-              {
-                transform: [{ translateX: shimmerTranslate }],
-              },
-            ]}
-          />
-        </Animated.View>
-
         {/* App Name */}
         <Animated.View
           style={[
             styles.textContainer,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideUpAnim }],
+              transform: [
+                { scale: scaleAnim },
+                { scale: pulseAnim },
+                { translateY: slideUpAnim }
+              ],
             },
           ]}
         >
-          <Text style={styles.appName}>HabitTracker</Text>
+          <View style={styles.brandRow}>
+            <Text style={styles.appName}>HABIT</Text>
+            <LinearGradient
+              colors={['#8B5CF6', '#06B6D4']}
+              style={styles.xBadge}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.xText}>X</Text>
+            </LinearGradient>
+          </View>
           <Text style={styles.tagline}>Build Better Habits</Text>
         </Animated.View>
 
@@ -355,72 +332,36 @@ const styles = StyleSheet.create({
     padding: 40,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  logoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 30,
-    position: 'relative',
-  },
-  logoGlow: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  logoGradient: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#fff',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-  },
-  shimmer: {
-    position: 'absolute',
-    top: 0,
-    left: -50,
-    right: -50,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    transform: [{ skewX: '-20deg' }],
-  },
   textContainer: {
     alignItems: 'center',
     marginBottom: 40,
   },
-  appName: {
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  xBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  xText: {
     fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 2,
+  },
+  appName: {
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#fff',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
-    letterSpacing: 2,
+    letterSpacing: 4,
   },
   tagline: {
     fontSize: 16,

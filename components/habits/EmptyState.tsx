@@ -49,15 +49,7 @@ export default function EmptyState({ onCreateHabit }: EmptyStateProps) {
   const buttonScale = useSharedValue(0);
   const buttonGlow = useSharedValue(0);
   
-  // Floating particles
-  const particles = React.useRef(
-    Array.from({ length: 6 }, () => ({
-      translateX: new Animated.Value(0),
-      translateY: new Animated.Value(0),
-      scale: useSharedValue(0),
-      opacity: useSharedValue(0),
-    }))
-  ).current;
+
 
   useEffect(() => {
     // Entrance animation sequence
@@ -162,6 +154,11 @@ export default function EmptyState({ onCreateHabit }: EmptyStateProps) {
         <View style={[styles.decorativeCircle, styles.circle3, { backgroundColor: `${colors.status.success}08` }]} />
         <View style={[styles.decorativeLine, styles.line1, { backgroundColor: `${colors.brand.primary}15` }]} />
         <View style={[styles.decorativeLine, styles.line2, { backgroundColor: `${colors.brand.secondary}12` }]} />
+        
+        {/* Floating Particles */}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Particle key={i} index={i} total={6} />
+        ))}
       </View>
       
       {/* Main Icon with glow */}
@@ -460,4 +457,71 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 0.2,
   },
+  
+  particle: {
+    position: 'absolute',
+    pointerEvents: 'none',
+  },
 });
+
+// Separate Particle component to handle individual animations correctly
+function Particle({ index, total }: { index: number; total: number }) {
+  const { colors } = useTheme();
+  
+  // Random start position
+  const startX = React.useMemo(() => (Math.random() - 0.5) * 200, []);
+  const startY = React.useMemo(() => (Math.random() - 0.5) * 200, []);
+  
+  const translateX = useSharedValue(startX);
+  const translateY = useSharedValue(startY);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0);
+
+  useEffect(() => {
+    // Delay based on index
+    const delay = index * 200;
+    
+    // Entrance
+    opacity.value = withDelay(delay, withTiming(0.6, { duration: 1000 }));
+    scale.value = withDelay(delay, withSpring(1, { damping: 8 }));
+    
+    // Floating motion
+    translateX.value = withDelay(delay, withRepeat(
+      withSequence(
+        withTiming(startX + (Math.random() - 0.5) * 50, { duration: 3000 + Math.random() * 1000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(startX, { duration: 3000 + Math.random() * 1000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      true
+    ));
+    
+    translateY.value = withDelay(delay, withRepeat(
+      withSequence(
+        withTiming(startY + (Math.random() - 0.5) * 50, { duration: 4000 + Math.random() * 1000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(startY, { duration: 4000 + Math.random() * 1000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      true
+    ));
+  }, []);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value }
+    ]
+  }));
+
+  const iconName = React.useMemo(() => {
+    const icons: (keyof typeof Ionicons.glyphMap)[] = ['star', 'sparkles', 'heart', 'moon', 'musical-note', 'flash'];
+    return icons[index % icons.length];
+  }, [index]);
+
+  return (
+    <Animated.View style={[styles.particle, style]}>
+      <Ionicons name={iconName} size={12 + Math.random() * 8} color={index % 2 === 0 ? colors.brand.primary : colors.brand.secondary} />
+    </Animated.View>
+  );
+}

@@ -133,7 +133,7 @@ class EnhancedNotificationService {
       handleNotification: async (notification) => {
         const isQuietHours = this.isQuietHours();
         return {
-          shouldShowBanner: !isQuietHours,
+          shouldShowBanner: false,
           shouldShowList: true,
           shouldPlaySound: !isQuietHours,
           shouldSetBadge: false,

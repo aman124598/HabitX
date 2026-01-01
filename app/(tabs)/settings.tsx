@@ -37,7 +37,7 @@ const SETTINGS_KEYS = {
 // Notification setup - updated to fix deprecation warning
 SafeNotifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowBanner: true,
+    shouldShowBanner: false,
     shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
@@ -615,27 +615,7 @@ export default function SettingsTab() {
           />
         </SettingsSection>
 
-        {/* Data Management */}
-        <SettingsSection title="💾 Data Management">
-          <SettingsItem
-            icon="cloud-outline"
-            title="Backup & Restore"
-            subtitle={settings.backupAuto ? "Auto backup enabled" : "Manual backup only"}
-            onPress={() => openModal('backup')}
-            rightElement={
-              isLoading ? (
-                <ThemedText variant="secondary" size="sm">Loading...</ThemedText>
-              ) : undefined
-            }
-          />
-          <ThemedDivider style={styles.divider} />
-          <SettingsItem
-            icon="download-outline"
-            title="Export & Import"
-            subtitle="CSV export, PDF reports, data import"
-            onPress={() => openModal('export')}
-          />
-        </SettingsSection>
+
 
         {/* Customization */}
         <SettingsSection title="👥 Social & Collaboration">

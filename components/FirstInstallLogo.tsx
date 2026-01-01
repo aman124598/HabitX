@@ -275,28 +275,6 @@ const FirstInstallLogo: React.FC<Props> = ({ onFinish, duration = 2800 }) => {
           ]}
         />
 
-        {/* Logo */}
-        <Animated.View
-          style={[
-            styles.logoContainer,
-            {
-              opacity: logoOpacity,
-              transform: [{ scale: logoScale }, { rotate: logoRotationValue }],
-            },
-          ]}
-        >
-          <LinearGradient
-            colors={['#8B5CF6', '#A78BFA', '#C4B5FD']}
-            style={styles.logoGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <View style={styles.logoInner}>
-              <Text style={styles.logoLetter}>H</Text>
-            </View>
-          </LinearGradient>
-        </Animated.View>
-
         {/* Sparkles */}
         {renderSparkles()}
       </View>
@@ -406,35 +384,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
     shadowRadius: 60,
-  },
-  logoContainer: {
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  logoGradient: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 5,
-  },
-  logoInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 65,
-    backgroundColor: '#1a1a2e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoLetter: {
-    fontSize: 72,
-    fontWeight: '800',
-    color: '#A78BFA',
-    letterSpacing: -3,
   },
   sparkle: {
     position: 'absolute',
