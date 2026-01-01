@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginWithGoogle: (userData: { user: User; token: string }) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -196,11 +197,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const loginWithGoogle = async (userData: { user: User; token: string }) => {
+    try {
+      setIsLoading(true);
+      setUser(userData.user);
+      // Initialize gamification data after successful Google login
+      await gamificationService.initUserGamification();
+      console.log('✅ Google login complete via context:', userData.user.username);
+    } catch (error) {
+      console.error('Google login context error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     isLoading,
     login,
+    loginWithGoogle,
     register,
     logout,
     refreshUser,

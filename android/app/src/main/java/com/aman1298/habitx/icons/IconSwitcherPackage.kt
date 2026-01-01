@@ -1,4 +1,4 @@
-package com.mozomint.zignore.icons
+package com.aman1298.habitx.icons
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

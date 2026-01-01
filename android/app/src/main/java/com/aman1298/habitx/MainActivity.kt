@@ -1,4 +1,4 @@
-package com.mozomint.zignore
+package com.aman1298.habitx
 
 import android.os.Build
 import android.os.Bundle

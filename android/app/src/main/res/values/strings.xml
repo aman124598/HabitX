@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Habit X</string>
+  <string name="app_name">Habit X</string>
+  <string name="expo_runtime_version">exposdk:54.0.0</string>
 </resources>

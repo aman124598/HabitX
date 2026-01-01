@@ -10,6 +10,8 @@ import {
   confirmPasswordReset,
   verifyPasswordResetCode,
   User as FirebaseUser,
+  GoogleAuthProvider,
+  signInWithCredential,
 } from 'firebase/auth';
 
 // Initialize Firebase client SDK
@@ -128,6 +130,22 @@ export async function confirmPasswordResetWithCode(oobCode: string, newPassword:
     console.log('✅ Password reset successfully');
   } catch (error) {
     console.error('❌ Error resetting password:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sign in with Google using ID token
+ * @param idToken - The Google ID token from OAuth
+ */
+export async function signInWithGoogle(idToken: string) {
+  try {
+    const credential = GoogleAuthProvider.credential(idToken);
+    const userCredential = await signInWithCredential(auth, credential);
+    console.log('✅ Google sign-in successful:', userCredential.user.email);
+    return userCredential;
+  } catch (error) {
+    console.error('❌ Google sign-in failed:', error);
     throw error;
   }
 }

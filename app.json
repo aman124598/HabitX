@@ -29,7 +29,9 @@
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
         "SYSTEM_ALERT_WINDOW",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK"
       ]
     },
     "web": {
@@ -63,16 +65,17 @@
         }
       ],
       "expo-background-fetch",
-      "expo-task-manager"
+      "expo-task-manager",
+      "expo-web-browser"
     ],
     "extra": {
       "router": {
-        "origin": false
+        "origin": "https://aman1298.com"
       },
       "eas": {
-        "projectId": "d4a557dc-d95c-4ed3-a07e-82d588a222a0"
+        "projectId": "10666677-8609-4d7e-bd5e-117c5a4eabea"
       }
     },
-    "owner": "aman1298"
+    "owner": "amanzzz"
   }
 }

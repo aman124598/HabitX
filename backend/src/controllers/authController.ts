@@ -173,6 +173,136 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+// @desc    Google OAuth login/register
+// @route   POST /api/auth/google-login
+// @access  Public
+export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
+  const bearerAuth = (req.headers.authorization || '').startsWith('Bearer ') ? (req.headers.authorization || '').split(' ')[1] : undefined;
+  const { email, displayName, photoURL, firebaseUid } = req.body;
+
+  if (!bearerAuth) {
+    throw createError('Firebase token is required', 401);
+  }
+
+  if (!email || !firebaseUid) {
+    throw createError('Email and Firebase UID are required', 400);
+  }
+
+  // Verify the Firebase ID token
+  let verifiedUid: string;
+  let emailVerified = false;
+
+  try {
+    if (!admin.apps.length) {
+      const serviceAccountPath = path.join(__dirname, '../../credentials/firebase-adminsdk.json');
+      const serviceAccount = require(serviceAccountPath);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+        projectId: serviceAccount.project_id,
+      });
+    }
+    const decoded = await admin.auth().verifyIdToken(bearerAuth);
+    verifiedUid = decoded.uid;
+    const firebaseUser = await admin.auth().getUser(decoded.uid);
+    emailVerified = firebaseUser.emailVerified || false;
+    console.log(`🔐 Google login: Firebase user ${decoded.email} - emailVerified: ${emailVerified}`);
+  } catch (adminErr: any) {
+    console.error('Firebase token verification failed:', adminErr?.message || adminErr);
+    // Try REST fallback
+    try {
+      const info = await verifyIdTokenViaRest(bearerAuth);
+      verifiedUid = info.uid;
+      emailVerified = !!info.emailVerified;
+    } catch (restErr: any) {
+      throw createError('Invalid Firebase token', 401);
+    }
+  }
+
+  // Check if UID matches
+  if (verifiedUid !== firebaseUid) {
+    throw createError('Firebase UID mismatch', 401);
+  }
+
+  // Check if user already exists
+  let user = await UserRepository.findByFirebaseUid(firebaseUid);
+  
+  if (!user) {
+    // Try to find by email
+    user = await UserRepository.findByEmail(email);
+  }
+
+  if (user) {
+    // User exists, update their info and log them in
+    await UserRepository.update(user.id, {
+      firebaseUid,
+      emailVerified: emailVerified || user.emailVerified,
+      avatar: photoURL || user.avatar,
+    });
+
+    user = await UserRepository.findById(user.id);
+    
+    console.log(`✅ Google login: Existing user ${user?.username} (${user?.email})`);
+  } else {
+    // Create new user from Google data
+    const username = displayName?.replace(/\s+/g, '_').toLowerCase() || email.split('@')[0];
+    
+    // Ensure unique username
+    let uniqueUsername = username;
+    let counter = 1;
+    while (await UserRepository.findByUsername(uniqueUsername)) {
+      uniqueUsername = `${username}${counter}`;
+      counter++;
+    }
+
+    const userPayload: Omit<IUser, 'id' | 'createdAt' | 'updatedAt'> = {
+      username: uniqueUsername,
+      email,
+      emailVerified: true, // Google emails are verified
+      firebaseUid,
+      totalXP: 0,
+      level: 1,
+      isPublic: true,
+      avatar: photoURL,
+    };
+
+    user = await UserRepository.create(userPayload);
+
+    // Sync username to Firebase
+    try {
+      await firebaseSyncService.syncUsernameToFirebase(firebaseUid, uniqueUsername);
+    } catch (syncErr) {
+      console.warn('⚠️ Could not sync username to Firebase:', syncErr);
+    }
+
+    console.log(`✅ Google login: Created new user ${user.username} (${user.email})`);
+  }
+
+  if (!user) {
+    throw createError('Failed to create or find user', 500);
+  }
+
+  const token = generateToken({ id: user.id, username: user.username, email: user.email });
+
+  res.status(200).json({
+    success: true,
+    message: 'Google login successful',
+    data: {
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        avatar: user.avatar,
+        totalXP: user.totalXP,
+        level: user.level,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+      token,
+    },
+  });
+});
+
 // @desc    Get current logged in user
 // @route   GET /api/auth/me
 // @access  Private
