@@ -8,11 +8,8 @@ export interface IUser {
   username: string;
   email: string;
   password?: string;
-  totalXP: number;
-  level: number;
   bio?: string;
   avatar?: string;
-  isPublic: boolean;
   emailVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: Date;
@@ -28,11 +25,8 @@ interface UserDocument {
   username: string;
   email: string;
   password?: string;
-  totalXP: number;
-  level: number;
   bio?: string;
   avatar?: string;
-  isPublic: boolean;
   emailVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry?: FirebaseFirestore.Timestamp;
@@ -63,11 +57,8 @@ export const UserRepository = {
       username: data.username,
       email: data.email,
       password: data.password,
-      totalXP: data.totalXP || 0,
-      level: data.level || 1,
       bio: data.bio,
       avatar: data.avatar,
-      isPublic: data.isPublic ?? true,
       emailVerified: data.emailVerified ?? false,
       verificationToken: data.verificationToken,
       verificationTokenExpiry: timestampToDate(data.verificationTokenExpiry),
@@ -88,11 +79,8 @@ export const UserRepository = {
     if (user.username !== undefined) doc.username = user.username;
     if (user.email !== undefined) doc.email = user.email?.toLowerCase();
     if (user.password !== undefined) doc.password = user.password;
-    if (user.totalXP !== undefined) doc.totalXP = user.totalXP;
-    if (user.level !== undefined) doc.level = user.level;
     if (user.bio !== undefined) doc.bio = user.bio;
     if (user.avatar !== undefined) doc.avatar = user.avatar;
-    if (user.isPublic !== undefined) doc.isPublic = user.isPublic;
     if (user.emailVerified !== undefined) doc.emailVerified = user.emailVerified;
     if (user.verificationToken !== undefined) doc.verificationToken = user.verificationToken;
     if (user.verificationTokenExpiry !== undefined) doc.verificationTokenExpiry = dateToTimestamp(user.verificationTokenExpiry);
@@ -121,11 +109,8 @@ export const UserRepository = {
       username: userData.username.trim(),
       email: userData.email.toLowerCase().trim(),
       password: hashedPassword,
-      totalXP: userData.totalXP || 0,
-      level: userData.level || 1,
       bio: userData.bio?.trim(),
       avatar: userData.avatar,
-      isPublic: userData.isPublic ?? true,
       emailVerified: userData.emailVerified ?? false,
       verificationToken: userData.verificationToken,
       verificationTokenExpiry: dateToTimestamp(userData.verificationTokenExpiry),
@@ -293,52 +278,6 @@ export const UserRepository = {
     
     const snapshot = await query.get();
     return snapshot.docs.map(doc => UserRepository.fromFirestore(doc)!).filter(Boolean);
-  },
-
-  /**
-   * Search users by username (for adding friends)
-   */
-  async searchByUsername(searchTerm: string, limit: number = 10): Promise<IUser[]> {
-    // Firestore doesn't support full-text search, so we use prefix matching
-    const endTerm = searchTerm + '\uf8ff';
-    
-    const snapshot = await UserRepository.collection()
-      .where('username', '>=', searchTerm)
-      .where('username', '<=', endTerm)
-      .where('isPublic', '==', true)
-      .limit(limit)
-      .get();
-    
-    return snapshot.docs.map(doc => UserRepository.fromFirestore(doc)!).filter(Boolean);
-  },
-
-  /**
-   * Get leaderboard (top users by XP)
-   */
-  async getLeaderboard(limit: number = 100): Promise<IUser[]> {
-    const snapshot = await UserRepository.collection()
-      .where('isPublic', '==', true)
-      .orderBy('totalXP', 'desc')
-      .limit(limit)
-      .get();
-    
-    return snapshot.docs.map(doc => UserRepository.fromFirestore(doc)!).filter(Boolean);
-  },
-
-  /**
-   * Add XP to user
-   */
-  async addXP(userId: string, xpAmount: number): Promise<IUser | null> {
-    const user = await UserRepository.findById(userId);
-    if (!user) return null;
-
-    const newXP = user.totalXP + xpAmount;
-    const newLevel = Math.floor(newXP / 1000) + 1; // Level up every 1000 XP
-
-    return UserRepository.update(userId, {
-      totalXP: newXP,
-      level: newLevel,
-    });
   },
 };
 

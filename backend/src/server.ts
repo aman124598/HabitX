@@ -7,9 +7,6 @@ import { connectDB } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth';
 import habitRoutes from './routes/habits';
-import challengeRoutes from './routes/challenges';
-import leaderboardRoutes from './routes/leaderboard';
-import friendsRoutes from './routes/friends';
 
 // Load environment variables
 dotenv.config();
@@ -318,25 +315,6 @@ app.get('/api', (req, res) => {
         'PUT /api/habits/:id': 'Update habit (requires auth)',
         'DELETE /api/habits/:id': 'Delete habit (requires auth)',
       },
-      challenges: {
-        'GET /api/challenges': 'Get challenges (requires auth)',
-        'POST /api/challenges': 'Create challenge (requires auth)',
-        'PUT /api/challenges/:id': 'Update challenge (requires auth)',
-        'DELETE /api/challenges/:id': 'Delete challenge (requires auth)',
-      },
-      leaderboard: {
-        'GET /api/leaderboard/global': 'Get global user leaderboard (requires auth)',
-        'GET /api/leaderboard/position': 'Get current user position in leaderboard (requires auth)',
-      },
-      friends: {
-        'GET /api/friends/search': 'Search users (requires auth)',
-        'GET /api/friends/requests': 'Get friend requests (requires auth)',
-        'POST /api/friends/request': 'Send friend request (requires auth)',
-        'PUT /api/friends/request/:requestId': 'Respond to friend request (requires auth)',
-        'GET /api/friends': 'Get friends list (requires auth)',
-        'DELETE /api/friends/:friendId': 'Remove friend (requires auth)',
-        'GET /api/friends/profile/:userId': 'Get user profile (requires auth)',
-      },
     },
     timestamp: new Date().toISOString(),
   });
@@ -345,9 +323,6 @@ app.get('/api', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/habits', habitRoutes);
-app.use('/api/challenges', challengeRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/friends', friendsRoutes);
 
 // Error handling middleware (should be last)
 app.use(errorHandler);

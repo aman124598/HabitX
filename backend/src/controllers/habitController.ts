@@ -220,8 +220,6 @@ export const toggleHabitCompletion = asyncHandler(async (req: Request, res: Resp
   
   let newStreak = habit.streak;
   let newLastCompletedOn: string | null | undefined = habit.lastCompletedOn;
-  let newXP = habit.xp || 0;
-  let xpAwardedNow = 0;
   
   if (isCompletedToday) {
     // Uncomplete
@@ -232,13 +230,6 @@ export const toggleHabitCompletion = asyncHandler(async (req: Request, res: Resp
     const continuesStreak = habit.lastCompletedOn === yesterday;
     newStreak = continuesStreak ? habit.streak + 1 : 1;
     newLastCompletedOn = today;
-    
-    // Award XP (only once per day)
-    const XP_REWARD = 10;
-    if (habit.lastCompletionXPAwardedOn !== today) {
-      newXP += XP_REWARD;
-      xpAwardedNow = XP_REWARD;
-    }
   }
 
   const updateData: Partial<IHabit> = {
@@ -246,21 +237,7 @@ export const toggleHabitCompletion = asyncHandler(async (req: Request, res: Resp
     lastCompletedOn: newLastCompletedOn,
   };
 
-  if (xpAwardedNow > 0) {
-    updateData.xp = newXP;
-    updateData.lastCompletionXPAwardedOn = today;
-  }
-
   const updatedHabit = await HabitRepository.update(req.params.id, updateData);
-
-  // Update user XP
-  if (xpAwardedNow > 0 && req.user) {
-    try {
-      await UserRepository.addXP(req.user.id, xpAwardedNow);
-    } catch (e) {
-      console.error('Failed to update user XP:', e);
-    }
-  }
 
   res.status(200).json({
     success: true,

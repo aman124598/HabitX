@@ -74,9 +74,6 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     username,
     email,
     emailVerified: emailVerifiedInFirebase,
-    totalXP: 0,
-    level: 1,
-    isPublic: true,
   };
 
   if (firebaseUidFromToken) {

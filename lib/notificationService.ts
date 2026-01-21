@@ -2,7 +2,6 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { gamificationService, XP_REWARDS } from './gamificationService';
 import SafeNotifications from './safeNotifications';
 
 // Configure notifications safely
@@ -147,7 +146,7 @@ class NotificationService {
   }
 
   // Send perfect day notification
-  async sendPerfectDayNotification(totalHabits: number, xpBonus: number) {
+  async sendPerfectDayNotification(totalHabits: number) {
     try {
       if (!(await this.shouldSend())) {
         return;
@@ -155,11 +154,10 @@ class NotificationService {
       await SafeNotifications.scheduleNotificationAsync({
         content: {
           title: '🎯 Perfect Day!',
-          body: `All ${totalHabits} habits completed!\n+${xpBonus} bonus XP earned!`,
+          body: `All ${totalHabits} habits completed! Great job keeping your streak!`,
           data: { 
             type: 'perfect_day', 
-            totalHabits, 
-            xpBonus 
+            totalHabits
           },
           sound: 'default',
         },
@@ -186,7 +184,7 @@ class NotificationService {
       await SafeNotifications.scheduleNotificationAsync({
         content: {
           title: '🎯 Habit Time!',
-          body: 'Ready to earn some XP? Complete your habits and level up!',
+          body: 'Stay consistent! Complete your habits today!',
           data: { type: 'daily_reminder' },
           sound: 'default',
         },
@@ -220,7 +218,7 @@ class NotificationService {
         await SafeNotifications.scheduleNotificationAsync({
           content: {
             title: '🎯 Habit Time!',
-            body: 'Ready to earn some XP? Complete your habits and level up!',
+            body: 'Stay consistent! Complete your habits today!',
             data: { type: 'daily_reminder' },
             sound: 'default',
           },
@@ -232,7 +230,7 @@ class NotificationService {
         await SafeNotifications.scheduleNotificationAsync({
           content: {
             title: '🎯 Habit Time!',
-            body: 'Ready to earn some XP? Complete your habits and level up!',
+            body: 'Stay consistent! Complete your habits today!',
             data: { type: 'daily_reminder' },
             sound: 'default',
           },

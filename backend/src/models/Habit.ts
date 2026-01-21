@@ -19,9 +19,6 @@ export interface IHabit {
   reminders?: { time: string; timezone?: string; enabled?: boolean }[];
   notes?: { text: string; createdAt: Date }[];
   attachments?: { filename: string; url: string; mimeType?: string; size?: number; uploadedAt?: Date }[];
-  xp?: number;
-  badges?: string[];
-  sharedWith?: string[];
   color?: string;
   icon?: string;
   lastBackupAt?: Date;
@@ -29,7 +26,6 @@ export interface IHabit {
   startDate: string;
   streak: number;
   lastCompletedOn?: string | null;
-  lastCompletionXPAwardedOn?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,9 +44,6 @@ interface HabitDocument {
   reminders?: { time: string; timezone?: string; enabled?: boolean }[];
   notes?: { text: string; createdAt: FirebaseFirestore.Timestamp }[];
   attachments?: { filename: string; url: string; mimeType?: string; size?: number; uploadedAt?: FirebaseFirestore.Timestamp }[];
-  xp?: number;
-  badges?: string[];
-  sharedWith?: string[];
   color?: string;
   icon?: string;
   lastBackupAt?: FirebaseFirestore.Timestamp;
@@ -58,7 +51,6 @@ interface HabitDocument {
   startDate: string;
   streak: number;
   lastCompletedOn?: string | null;
-  lastCompletionXPAwardedOn?: string | null;
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
 }
@@ -96,9 +88,6 @@ export const HabitRepository = {
         ...a,
         uploadedAt: timestampToDate(a.uploadedAt),
       })),
-      xp: data.xp || 0,
-      badges: data.badges,
-      sharedWith: data.sharedWith,
       color: data.color,
       icon: data.icon,
       lastBackupAt: timestampToDate(data.lastBackupAt),
@@ -106,7 +95,6 @@ export const HabitRepository = {
       startDate: data.startDate,
       streak: data.streak || 0,
       lastCompletedOn: data.lastCompletedOn,
-      lastCompletionXPAwardedOn: data.lastCompletionXPAwardedOn,
       createdAt: timestampToDate(data.createdAt) || new Date(),
       updatedAt: timestampToDate(data.updatedAt) || new Date(),
     };
@@ -125,16 +113,12 @@ export const HabitRepository = {
     if (habit.frequency !== undefined) doc.frequency = habit.frequency;
     if (habit.customFrequency !== undefined) doc.customFrequency = habit.customFrequency;
     if (habit.reminders !== undefined) doc.reminders = habit.reminders;
-    if (habit.xp !== undefined) doc.xp = habit.xp;
-    if (habit.badges !== undefined) doc.badges = habit.badges;
-    if (habit.sharedWith !== undefined) doc.sharedWith = habit.sharedWith;
     if (habit.color !== undefined) doc.color = habit.color;
     if (habit.icon !== undefined) doc.icon = habit.icon;
     if (habit.category !== undefined) doc.category = habit.category;
     if (habit.startDate !== undefined) doc.startDate = habit.startDate;
     if (habit.streak !== undefined) doc.streak = Math.max(0, habit.streak);
     if (habit.lastCompletedOn !== undefined) doc.lastCompletedOn = habit.lastCompletedOn;
-    if (habit.lastCompletionXPAwardedOn !== undefined) doc.lastCompletionXPAwardedOn = habit.lastCompletionXPAwardedOn;
     if (habit.lastBackupAt !== undefined) doc.lastBackupAt = dateToTimestamp(habit.lastBackupAt);
     
     return doc;
@@ -162,16 +146,12 @@ export const HabitRepository = {
       frequency: habitData.frequency || 'daily',
       customFrequency: habitData.frequency === 'custom' ? habitData.customFrequency : undefined,
       reminders: habitData.reminders,
-      xp: habitData.xp || 0,
-      badges: habitData.badges,
-      sharedWith: habitData.sharedWith,
       color: habitData.color,
       icon: habitData.icon,
       category: habitData.category,
       startDate: habitData.startDate,
       streak: habitData.streak || 0,
       lastCompletedOn: habitData.lastCompletedOn,
-      lastCompletionXPAwardedOn: habitData.lastCompletionXPAwardedOn,
       createdAt: dateToTimestamp(now)!,
       updatedAt: dateToTimestamp(now)!,
     };
@@ -183,7 +163,6 @@ export const HabitRepository = {
       ...habitData,
       description: habitData.description || '',
       streak: habitData.streak || 0,
-      xp: habitData.xp || 0,
       createdAt: now,
       updatedAt: now,
     };
@@ -326,18 +305,6 @@ export const HabitRepository = {
   },
 
   /**
-   * Add XP to habit
-   */
-  async addXP(id: string, xpAmount: number): Promise<IHabit | null> {
-    const habit = await HabitRepository.findById(id);
-    if (!habit) return null;
-
-    return HabitRepository.update(id, {
-      xp: (habit.xp || 0) + xpAmount,
-    });
-  },
-
-  /**
    * Bulk create habits (for import)
    */
   async bulkCreate(habits: Omit<IHabit, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<IHabit[]> {
@@ -357,16 +324,12 @@ export const HabitRepository = {
         frequency: habitData.frequency || 'daily',
         customFrequency: habitData.frequency === 'custom' ? habitData.customFrequency : undefined,
         reminders: habitData.reminders,
-        xp: habitData.xp || 0,
-        badges: habitData.badges,
-        sharedWith: habitData.sharedWith,
         color: habitData.color,
         icon: habitData.icon,
         category: habitData.category,
         startDate: habitData.startDate,
         streak: habitData.streak || 0,
         lastCompletedOn: habitData.lastCompletedOn,
-        lastCompletionXPAwardedOn: habitData.lastCompletionXPAwardedOn,
         createdAt: dateToTimestamp(now)!,
         updatedAt: dateToTimestamp(now)!,
       };
@@ -378,7 +341,6 @@ export const HabitRepository = {
         ...habitData,
         description: habitData.description || '',
         streak: habitData.streak || 0,
-        xp: habitData.xp || 0,
         createdAt: now,
         updatedAt: now,
       });

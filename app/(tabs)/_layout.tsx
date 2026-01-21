@@ -45,39 +45,7 @@ export default function TabsLayout() {
           )
         }}
       />
-      <Tabs.Screen
-        name="challenges"
-        options={{ 
-          href: null, // Hide from tab bar
-          title: "Challenges", 
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons 
-              name={focused ? "trophy" : "trophy-outline"} 
-              color={color} 
-              size={size} 
-            />
-          )
-        }}
-      />
-      {FEATURES.friendRequests && (
-        <Tabs.Screen
-          name="friends"
-          options={{ 
-            title: "Friends", 
-            tabBarIcon: ({ color, size, focused }) => {
-              // We'll add the badge logic in the friends tab component itself
-              // since we can't easily access context here
-              return (
-                <Ionicons 
-                  name={focused ? "people" : "people-outline"} 
-                  color={color} 
-                  size={size} 
-                />
-              );
-            }
-          }}
-        />
-      )}
+      
       <Tabs.Screen
         name="stats"
         options={{ 
