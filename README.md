@@ -41,7 +41,7 @@ Habit X respects your privacy:
 ## Support
 
 Having issues or suggestions? Contact us:
-- Email: amanxc1298@gmail.com
+- Email: amanraj89969@gmail.com
 
 ## Version History
 
@@ -65,8 +65,6 @@ npm install
 # Start development server
 npm start
 
-# Build for production (APK for Samsung Store)
-eas build --platform android --profile production-apk
 ```
 
 ## License
