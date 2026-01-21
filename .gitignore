@@ -10,4 +10,7 @@ android/local.properties
 backend/credentials/firebase-adminsdk.json
 backend/credentials/serviceAccountKey.json
 credentials/
+credentials.json
+android/app/google-services.json
+
 
