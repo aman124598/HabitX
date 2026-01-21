@@ -7,9 +7,12 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../lib/themeContext';
 import { Challenge } from '../../lib/challengesApi';
 import { useAuth } from '../../lib/authContext';
+import { ThemedCard, ThemedText, ThemedButton, ThemedBadge, ThemedProgressBar } from '../Themed';
+import Theme, { getShadow } from '../../lib/theme';
 
 // Utility function to check if a challenge has ended
 const isChallengeEnded = (challenge: Challenge): boolean => {

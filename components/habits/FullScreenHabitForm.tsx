@@ -1,7 +1,7 @@
 import React from 'react';
-import { Modal, View, StyleSheet, Pressable } from 'react-native';
+import { Modal, View, StyleSheet, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import HabitForm, { HabitFormProps } from './HabitForm';
-import { ThemedCard, ThemedText } from '../Themed';
+import { ThemedText } from '../Themed';
 import { Ionicons } from '@expo/vector-icons';
 import Theme from '../../lib/theme';
 import { useTheme } from '../../lib/themeContext';
@@ -11,27 +11,56 @@ type FullScreenHabitFormProps = HabitFormProps & {
 };
 
 export default function FullScreenHabitForm({ visible, onCancel, onSubmit }: FullScreenHabitFormProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onCancel}>
-      <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}> 
-  <ThemedCard variant="elevated" style={StyleSheet.flatten([styles.card, { backgroundColor: colors.background.secondary }])}> 
-          <View style={styles.headerRow}>
-            <ThemedText variant="primary" size="xl" weight="bold">Create Habit</ThemedText>
-            <Pressable onPress={onCancel} style={styles.closeButton}>
-              <Ionicons name="close" size={22} color={colors.text.primary} />
-            </Pressable>
-          </View>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
+          <View style={[
+            styles.card, 
+            { 
+              backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+            }
+          ]}>
+            {/* Header */}
+            <View style={[styles.headerRow, { borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
+              <View style={styles.headerLeft}>
+                <View style={[styles.iconContainer, { backgroundColor: `${colors.brand.primary}15` }]}>
+                  <Ionicons name="add-circle" size={24} color={colors.brand.primary} />
+                </View>
+                <View>
+                  <ThemedText variant="primary" size="xl" weight="bold">New Habit</ThemedText>
+                  <ThemedText variant="secondary" size="sm">Build a new positive routine</ThemedText>
+                </View>
+              </View>
+              <Pressable 
+                onPress={onCancel} 
+                style={[styles.closeButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
+              >
+                <Ionicons name="close" size={20} color={colors.text.secondary} />
+              </Pressable>
+            </View>
 
-          <HabitForm onCancel={onCancel} onSubmit={onSubmit} inline hideTitle />
-        </ThemedCard>
-      </View>
+            {/* Form Content */}
+            <View style={styles.formContainer}>
+              <HabitForm onCancel={onCancel} onSubmit={onSubmit} inline hideTitle />
+            </View>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     justifyContent: 'center',
@@ -40,9 +69,10 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    maxWidth: 720,
-    maxHeight: '95%',
-    borderRadius: Theme.borderRadius.xl,
+    maxWidth: 480,
+    maxHeight: '90%',
+    borderRadius: Theme.borderRadius.xxl,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   headerRow: {
@@ -50,9 +80,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Theme.spacing.lg,
+    paddingBottom: Theme.spacing.md,
     borderBottomWidth: 1,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Theme.spacing.md,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   closeButton: {
-    padding: Theme.spacing.sm,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  formContainer: {
+    padding: Theme.spacing.lg,
+    paddingTop: Theme.spacing.md,
   },
 });

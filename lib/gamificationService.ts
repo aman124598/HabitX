@@ -202,27 +202,21 @@ class GamificationService {
   // Initialize user gamification data
   async initUserGamification(): Promise<void> {
     try {
-      console.log('🎮 Initializing user gamification data...');
       this.cachedUserGamification = await userGamificationService.getUserGamification();
-      console.log('✅ User gamification initialized:', this.cachedUserGamification);
     } catch (error) {
-      console.warn('❌ Failed to initialize user gamification data:', error);
+      // Silently use default values - errors are handled in userGamificationService
       this.cachedUserGamification = { totalXP: 0, level: 1 };
-      console.warn('🔄 Using fallback gamification data:', this.cachedUserGamification);
     }
   }
 
   // Refresh cached user data
   async refreshUserGamification(): Promise<UserGamificationData> {
     try {
-      console.log('🔄 Refreshing user gamification data...');
       this.cachedUserGamification = await userGamificationService.getUserGamification();
-      console.log('✅ User gamification refreshed:', this.cachedUserGamification);
       return this.cachedUserGamification;
     } catch (error) {
-      console.warn('❌ Failed to refresh user gamification data:', error);
+      // Silently use default values
       this.cachedUserGamification = { totalXP: 0, level: 1 };
-      console.warn('🔄 Using fallback gamification data:', this.cachedUserGamification);
       return this.cachedUserGamification;
     }
   }
@@ -249,7 +243,7 @@ class GamificationService {
         userData = await userGamificationService.getUserGamification();
         this.cachedUserGamification = userData;
       } catch (error) {
-        console.warn('Failed to fetch user gamification data, using fallback:', error);
+        // Silently use default values
         userData = { totalXP: 0, level: 1 };
       }
     }

@@ -191,9 +191,7 @@ export default function FriendSearchScreen() {
           <View style={styles.userInfo}>
             <UserAvatar 
               username={user.username}
-              level={user.level}
               size="medium"
-              showLevel
             />
             <View style={styles.userDetails}>
               <ThemedText variant="primary" size="lg" weight="semibold">
@@ -201,9 +199,6 @@ export default function FriendSearchScreen() {
                 {isSelf && (
                   <ThemedText variant="accent" size="sm"> (You)</ThemedText>
                 )}
-              </ThemedText>
-              <ThemedText variant="secondary" size="sm">
-                Level {user.level} • {user.totalXP.toLocaleString()} XP
               </ThemedText>
               {user.bio && (
                 <ThemedText variant="tertiary" size="xs" style={styles.bio}>

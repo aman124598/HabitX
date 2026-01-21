@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import habitsService, { Habit, CreateHabitData } from '../lib/habitsApi';
-import { gamificationService } from '../lib/gamificationService';
 import { notificationService } from '../lib/notificationService';
 import { useAuth } from '../lib/authContext';
-import { useGamification } from '../lib/gamificationContext';
 import { getToday } from '../lib/dateHelper';
 import { useToast } from '../lib/toastContext';
 
@@ -12,7 +10,6 @@ export function useHabits() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const { isAuthenticated } = useAuth();
-  const { showFlamesAnimation } = useGamification();
   const toast = useToast();
 
   const refresh = useCallback(async () => {
@@ -52,24 +49,8 @@ export function useHabits() {
       setHabits(prev => {
         const newHabits = [...prev, habit];
         
-        // Check for newly unlocked achievements after habit creation
-        const previousStats = gamificationService.calculateUserStatsSync(prev);
-        const currentStats = gamificationService.calculateUserStatsSync(newHabits);
-        
-        // Check for achievements (including first habit)
-        setTimeout(() => {
-          gamificationService.checkAndAwardNewAchievements(
-            habit.id,
-            previousStats,
-            currentStats,
-            (xp, title, subtitle) => {
-              showFlamesAnimation({ amount: xp, title, subtitle });
-            }
-          ).catch(console.error);
-        }, 500);
-        
         if (prev.length === 0) {
-          toast.achievement('🎉 Welcome!', 'First habit created! You earned bonus XP!', 20);
+          toast.success('🎉 Welcome!', 'Your first habit has been created!');
         }
         
         return newHabits;
@@ -125,67 +106,27 @@ export function useHabits() {
       console.log('Completion status check:', { wasCompleted, isNowCompleted, todayStr });
       
   if (!wasCompleted && isNowCompleted) {
-        
         // Show completion toast
         toast.success('Habit Completed!', `Great job completing "${oldHabit.name}"!`);
         
-        // Handle gamification updates (server awards completion XP once per day)
-        try {
-          // Calculate stats before awarding bonuses/achievements
-          const previousStats = await gamificationService.calculateUserStats(habits);
-
-          // Refresh user gamification to reflect server-side XP award
-          await gamificationService.refreshUserGamification();
+        // Check for streak milestones
+        if (updatedHabit.streak === 7 || updatedHabit.streak === 30 || updatedHabit.streak === 100) {
+          let streakTitle = '';
+          if (updatedHabit.streak === 7) streakTitle = '🔥 Week Warrior!';
+          else if (updatedHabit.streak === 30) streakTitle = '👑 Month Master!';
+          else if (updatedHabit.streak === 100) streakTitle = '🏆 Century Champion!';
           
-          // Get updated habits data for accurate calculations
-          const updatedHabits = await habitsService.getHabits();
-          const currentStats = await gamificationService.calculateUserStats(updatedHabits);
-          await gamificationService.getGamificationDataAsync(updatedHabits);
-          
-          // Check for streak bonuses
-          if (updatedHabit.streak === 7 || updatedHabit.streak === 30 || updatedHabit.streak === 100) {
-            await gamificationService.awardStreakBonus(id, updatedHabit.streak, (xp, title, subtitle) => {
-              showFlamesAnimation({ amount: xp, title, subtitle });
-            });
-            
-            // Show streak milestone toast
-            const bonusXP = updatedHabit.streak === 7 ? 50 : 
-                           updatedHabit.streak === 30 ? 200 : 500;
-            let streakTitle = '';
-            if (updatedHabit.streak === 7) streakTitle = '🔥 Week Warrior!';
-            else if (updatedHabit.streak === 30) streakTitle = '👑 Month Master!';
-            else if (updatedHabit.streak === 100) streakTitle = '🏆 Century Champion!';
-            
-            toast.achievement(streakTitle, `${updatedHabit.streak} day streak bonus!`, bonusXP);
-          }
-          
-          // Check for perfect day
-          const todayCompleted = updatedHabits.filter(h => h.lastCompletedOn === todayStr).length;
-          if (todayCompleted === updatedHabits.length) {
-            gamificationService.awardPerfectDayBonus(updatedHabits, (xp, title, subtitle) => {
-              showFlamesAnimation({ amount: xp, title, subtitle });
-            }).catch(console.error);
-            toast.achievement('🎯 Perfect Day!', `All ${updatedHabits.length} habits completed!`, 25);
-          }
-          
-          // Check for newly unlocked achievements
-          await gamificationService.checkAndAwardNewAchievements(
-            id, 
-            previousStats, 
-            currentStats,
-            (xp, title, subtitle) => {
-              showFlamesAnimation({ amount: xp, title, subtitle });
-            }
-          );
-          
-          // Update habits state with the latest data including XP
-          const finalUpdatedHabits = await habitsService.getHabits();
-          setHabits(finalUpdatedHabits);
-        } catch (gamificationError) {
-          console.error('Gamification error (non-blocking):', gamificationError);
-          // Refresh to get latest data even if gamification failed
-          refresh();
+          toast.success(streakTitle, `${updatedHabit.streak} day streak!`);
         }
+        
+        // Check for perfect day
+        const updatedHabits = await habitsService.getHabits();
+        const todayCompleted = updatedHabits.filter(h => h.lastCompletedOn === todayStr).length;
+        if (todayCompleted === updatedHabits.length && updatedHabits.length > 1) {
+          toast.success('🎯 Perfect Day!', `All ${updatedHabits.length} habits completed!`);
+        }
+        
+        setHabits(updatedHabits);
       }
     } catch (error: any) {
       console.error('Failed to toggle habit:', error);

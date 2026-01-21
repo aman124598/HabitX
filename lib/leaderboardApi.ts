@@ -74,8 +74,15 @@ export const leaderboardApi = {
 
       return await response.json();
     } catch (error) {
-      console.error('Get user position error:', error);
-      throw error;
+      // Log as warning since this is not critical functionality
+      console.warn('Get user position error:', error);
+      // Return a default response instead of throwing
+      return {
+        rank: null,
+        totalXP: 0,
+        level: 1,
+        totalUsers: 0,
+      };
     }
   },
 

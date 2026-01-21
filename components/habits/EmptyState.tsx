@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -11,13 +11,10 @@ import Animated, {
   withDelay,
   withSpring,
   Easing,
-  interpolate,
 } from 'react-native-reanimated';
 import { ThemedView, ThemedText, ThemedButton } from '../Themed';
 import { useTheme } from '../../lib/themeContext';
 import Theme from '../../lib/theme';
-
-const { width } = Dimensions.get('window');
 
 interface EmptyStateProps {
   onCreateHabit: () => void;
@@ -29,8 +26,6 @@ export default function EmptyState({ onCreateHabit }: EmptyStateProps) {
   // Main icon animations
   const translateY = useSharedValue(0);
   const scale = useSharedValue(0);
-  const rotation = useSharedValue(0);
-  const glowOpacity = useSharedValue(0);
   
   // Title animations
   const titleOpacity = useSharedValue(0);
@@ -47,7 +42,6 @@ export default function EmptyState({ onCreateHabit }: EmptyStateProps) {
   
   // Button animation
   const buttonScale = useSharedValue(0);
-  const buttonGlow = useSharedValue(0);
   
 
 
@@ -55,7 +49,6 @@ export default function EmptyState({ onCreateHabit }: EmptyStateProps) {
     // Entrance animation sequence
     // Icon entrance
     scale.value = withDelay(200, withSpring(1, { damping: 12, stiffness: 100 }));
-    glowOpacity.value = withDelay(400, withTiming(0.5, { duration: 600 }));
     
     // Title entrance
     titleOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
@@ -73,40 +66,11 @@ export default function EmptyState({ onCreateHabit }: EmptyStateProps) {
     // Button entrance
     buttonScale.value = withDelay(1100, withSpring(1, { damping: 12, stiffness: 100 }));
     
-    // Continuous animations
+    // Subtle floating motion
     translateY.value = withDelay(500, withRepeat(
       withSequence(
-        withTiming(-12, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    ));
-    
-    rotation.value = withDelay(500, withRepeat(
-      withSequence(
-        withTiming(-5, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(5, { duration: 2500, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    ));
-    
-    // Glow pulse
-    glowOpacity.value = withDelay(1000, withRepeat(
-      withSequence(
-        withTiming(0.7, { duration: 1500 }),
-        withTiming(0.3, { duration: 1500 })
-      ),
-      -1,
-      true
-    ));
-    
-    // Button glow pulse
-    buttonGlow.value = withDelay(1500, withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1200 }),
-        withTiming(0, { duration: 1200 })
+        withTiming(-8, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 2500, easing: Easing.inOut(Easing.ease) })
       ),
       -1,
       true
@@ -117,13 +81,7 @@ export default function EmptyState({ onCreateHabit }: EmptyStateProps) {
     transform: [
       { translateY: translateY.value },
       { scale: scale.value },
-      { rotate: `${rotation.value}deg` },
     ],
-  }));
-
-  const glowAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-    transform: [{ scale: interpolate(glowOpacity.value, [0.3, 0.7], [1, 1.2]) }],
   }));
 
   const titleAnimatedStyle = useAnimatedStyle(() => ({
@@ -140,35 +98,10 @@ export default function EmptyState({ onCreateHabit }: EmptyStateProps) {
     transform: [{ scale: buttonScale.value }],
   }));
 
-  const buttonGlowAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(buttonGlow.value, [0, 1], [0, 0.4]),
-    transform: [{ scale: interpolate(buttonGlow.value, [0, 1], [0.9, 1.1]) }],
-  }));
-
   return (
     <ThemedView variant="secondary" style={styles.container}>
-      {/* Decorative background elements */}
-      <View style={styles.decorativeContainer}>
-        <View style={[styles.decorativeCircle, styles.circle1, { backgroundColor: `${colors.brand.primary}12` }]} />
-        <View style={[styles.decorativeCircle, styles.circle2, { backgroundColor: `${colors.brand.secondary}10` }]} />
-        <View style={[styles.decorativeCircle, styles.circle3, { backgroundColor: `${colors.status.success}08` }]} />
-        <View style={[styles.decorativeLine, styles.line1, { backgroundColor: `${colors.brand.primary}15` }]} />
-        <View style={[styles.decorativeLine, styles.line2, { backgroundColor: `${colors.brand.secondary}12` }]} />
-        
-        {/* Floating Particles */}
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Particle key={i} index={i} total={6} />
-        ))}
-      </View>
-      
-      {/* Main Icon with glow */}
+      {/* Main Icon */}
       <View style={styles.iconWrapper}>
-        <Animated.View style={[styles.iconGlow, glowAnimatedStyle]}>
-          <LinearGradient
-            colors={[`${colors.brand.primary}40`, 'transparent']}
-            style={styles.iconGlowGradient}
-          />
-        </Animated.View>
         <Animated.View style={[styles.iconContainer, iconAnimatedStyle]}>
           <LinearGradient
             colors={colors.brand.gradient}
@@ -210,14 +143,8 @@ export default function EmptyState({ onCreateHabit }: EmptyStateProps) {
         </Animated.View>
       </View>
       
-      {/* CTA Button with glow */}
+      {/* CTA Button */}
       <Animated.View style={[styles.buttonWrapper, buttonAnimatedStyle]}>
-        <Animated.View style={[styles.buttonGlow, buttonGlowAnimatedStyle]}>
-          <LinearGradient
-            colors={colors.brand.gradient}
-            style={styles.buttonGlowGradient}
-          />
-        </Animated.View>
         <ThemedButton
           variant="primary"
           size="xl"
@@ -274,78 +201,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 520,
   },
-  
-  decorativeContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  
-  decorativeCircle: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-
-  decorativeLine: {
-    position: 'absolute',
-    borderRadius: 2,
-  },
-  
-  circle1: {
-    width: 220,
-    height: 220,
-    top: -60,
-    right: -60,
-  },
-  
-  circle2: {
-    width: 160,
-    height: 160,
-    bottom: 40,
-    left: -50,
-  },
-  
-  circle3: {
-    width: 120,
-    height: 120,
-    bottom: -30,
-    right: 20,
-  },
-
-  line1: {
-    width: 80,
-    height: 3,
-    top: 80,
-    left: 30,
-    transform: [{ rotate: '-20deg' }],
-  },
-
-  line2: {
-    width: 60,
-    height: 3,
-    bottom: 120,
-    right: 40,
-    transform: [{ rotate: '30deg' }],
-  },
 
   iconWrapper: {
     position: 'relative',
     marginBottom: Theme.spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  iconGlow: {
-    position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-  },
-
-  iconGlowGradient: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 80,
   },
   
   iconContainer: {
@@ -412,22 +273,7 @@ const styles = StyleSheet.create({
   },
 
   buttonWrapper: {
-    position: 'relative',
     marginBottom: Theme.spacing.xl,
-  },
-
-  buttonGlow: {
-    position: 'absolute',
-    top: -10,
-    left: -10,
-    right: -10,
-    bottom: -10,
-    borderRadius: Theme.borderRadius.xl + 10,
-  },
-
-  buttonGlowGradient: {
-    flex: 1,
-    borderRadius: Theme.borderRadius.xl + 10,
   },
   
   ctaButton: {
@@ -457,71 +303,4 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 0.2,
   },
-  
-  particle: {
-    position: 'absolute',
-    pointerEvents: 'none',
-  },
 });
-
-// Separate Particle component to handle individual animations correctly
-function Particle({ index, total }: { index: number; total: number }) {
-  const { colors } = useTheme();
-  
-  // Random start position
-  const startX = React.useMemo(() => (Math.random() - 0.5) * 200, []);
-  const startY = React.useMemo(() => (Math.random() - 0.5) * 200, []);
-  
-  const translateX = useSharedValue(startX);
-  const translateY = useSharedValue(startY);
-  const opacity = useSharedValue(0);
-  const scale = useSharedValue(0);
-
-  useEffect(() => {
-    // Delay based on index
-    const delay = index * 200;
-    
-    // Entrance
-    opacity.value = withDelay(delay, withTiming(0.6, { duration: 1000 }));
-    scale.value = withDelay(delay, withSpring(1, { damping: 8 }));
-    
-    // Floating motion
-    translateX.value = withDelay(delay, withRepeat(
-      withSequence(
-        withTiming(startX + (Math.random() - 0.5) * 50, { duration: 3000 + Math.random() * 1000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(startX, { duration: 3000 + Math.random() * 1000, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    ));
-    
-    translateY.value = withDelay(delay, withRepeat(
-      withSequence(
-        withTiming(startY + (Math.random() - 0.5) * 50, { duration: 4000 + Math.random() * 1000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(startY, { duration: 4000 + Math.random() * 1000, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    ));
-  }, []);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value }
-    ]
-  }));
-
-  const iconName = React.useMemo(() => {
-    const icons: (keyof typeof Ionicons.glyphMap)[] = ['star', 'sparkles', 'heart', 'moon', 'musical-note', 'flash'];
-    return icons[index % icons.length];
-  }, [index]);
-
-  return (
-    <Animated.View style={[styles.particle, style]}>
-      <Ionicons name={iconName} size={12 + Math.random() * 8} color={index % 2 === 0 ? colors.brand.primary : colors.brand.secondary} />
-    </Animated.View>
-  );
-}

@@ -4,290 +4,80 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
   StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import Theme, { getShadow } from "../lib/theme";
-
-const { width, height } = Dimensions.get("window");
 
 interface SplashScreenProps {
   onAnimationComplete: () => void;
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
-  // Animation values
-
-  const logoGlow = useRef(new Animated.Value(0)).current;
-  const ringScale1 = useRef(new Animated.Value(0.5)).current;
-  const ringScale2 = useRef(new Animated.Value(0.5)).current;
-  const ringScale3 = useRef(new Animated.Value(0.5)).current;
-  const ringOpacity1 = useRef(new Animated.Value(0)).current;
-  const ringOpacity2 = useRef(new Animated.Value(0)).current;
-  const ringOpacity3 = useRef(new Animated.Value(0)).current;
+  // Simple animation values
   const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleTranslateY = useRef(new Animated.Value(30)).current;
+  const titleTranslateY = useRef(new Animated.Value(20)).current;
   const subtitleOpacity = useRef(new Animated.Value(0)).current;
-  const subtitleTranslateY = useRef(new Animated.Value(20)).current;
   const dotsOpacity = useRef(new Animated.Value(0)).current;
-  const dot1Scale = useRef(new Animated.Value(0.5)).current;
-  const dot2Scale = useRef(new Animated.Value(0.5)).current;
-  const dot3Scale = useRef(new Animated.Value(0.5)).current;
-  const backgroundShift = useRef(new Animated.Value(0)).current;
-
-  // Particle animations
-  const particles = useRef(
-    Array.from({ length: 12 }, () => ({
-      translateX: new Animated.Value(0),
-      translateY: new Animated.Value(0),
-      opacity: new Animated.Value(0),
-      scale: new Animated.Value(0),
-      rotation: new Animated.Value(0),
-    }))
-  ).current;
+  const dot1Scale = useRef(new Animated.Value(0.8)).current;
+  const dot2Scale = useRef(new Animated.Value(0.8)).current;
+  const dot3Scale = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
-    // Background gradient shift animation
-    const bgAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(backgroundShift, {
-          toValue: 1,
-          duration: 3000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(backgroundShift, {
-          toValue: 0,
-          duration: 3000,
-          useNativeDriver: false,
-        }),
-      ])
-    );
-    bgAnimation.start();
-
-    // Main entrance sequence
+    // Simple entrance animation
     const mainSequence = Animated.sequence([
       // Title entrance
       Animated.parallel([
         Animated.spring(titleTranslateY, { toValue: 0, tension: 80, friction: 12, useNativeDriver: true }),
         Animated.timing(titleOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
       ]),
-
-      // Pulsing rings
-      Animated.stagger(150, [
-        Animated.parallel([
-          Animated.spring(ringScale1, { toValue: 1.5, tension: 40, friction: 10, useNativeDriver: true }),
-          Animated.sequence([
-            Animated.timing(ringOpacity1, { toValue: 0.6, duration: 300, useNativeDriver: true }),
-            Animated.timing(ringOpacity1, { toValue: 0, duration: 600, useNativeDriver: true }),
-          ]),
-        ]),
-        Animated.parallel([
-          Animated.spring(ringScale2, { toValue: 2, tension: 40, friction: 10, useNativeDriver: true }),
-          Animated.sequence([
-            Animated.timing(ringOpacity2, { toValue: 0.4, duration: 300, useNativeDriver: true }),
-            Animated.timing(ringOpacity2, { toValue: 0, duration: 600, useNativeDriver: true }),
-          ]),
-        ]),
-        Animated.parallel([
-          Animated.spring(ringScale3, { toValue: 2.5, tension: 40, friction: 10, useNativeDriver: true }),
-          Animated.sequence([
-            Animated.timing(ringOpacity3, { toValue: 0.2, duration: 300, useNativeDriver: true }),
-            Animated.timing(ringOpacity3, { toValue: 0, duration: 600, useNativeDriver: true }),
-          ]),
-        ]),
-      ]),
-
-
-
       // Subtitle entrance
       Animated.delay(100),
-      Animated.parallel([
-        Animated.spring(subtitleTranslateY, { toValue: 0, tension: 80, friction: 12, useNativeDriver: true }),
-        Animated.timing(subtitleOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      ]),
-
+      Animated.timing(subtitleOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
       // Loading dots
       Animated.timing(dotsOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
     ]);
 
-    // Particle animations
-    const particleAnimations = particles.map((particle, index) => {
-      const angle = (index / particles.length) * Math.PI * 2;
-      const radius = 80 + Math.random() * 60;
-      const targetX = Math.cos(angle) * radius;
-      const targetY = Math.sin(angle) * radius;
-
-      return Animated.loop(
-        Animated.sequence([
-          Animated.delay(index * 100),
-          Animated.parallel([
-            Animated.timing(particle.opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-            Animated.spring(particle.scale, { toValue: 1, tension: 50, friction: 8, useNativeDriver: true }),
-          ]),
-          Animated.parallel([
-            Animated.timing(particle.translateX, { toValue: targetX, duration: 2000, useNativeDriver: true }),
-            Animated.timing(particle.translateY, { toValue: targetY, duration: 2000, useNativeDriver: true }),
-            Animated.timing(particle.rotation, { toValue: 1, duration: 2000, useNativeDriver: true }),
-          ]),
-          Animated.parallel([
-            Animated.timing(particle.opacity, { toValue: 0, duration: 500, useNativeDriver: true }),
-            Animated.timing(particle.scale, { toValue: 0, duration: 500, useNativeDriver: true }),
-          ]),
-          // Reset
-          Animated.parallel([
-            Animated.timing(particle.translateX, { toValue: 0, duration: 0, useNativeDriver: true }),
-            Animated.timing(particle.translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
-            Animated.timing(particle.rotation, { toValue: 0, duration: 0, useNativeDriver: true }),
-          ]),
-        ])
-      );
-    });
-
     // Loading dots animation
     const dotsAnimation = Animated.loop(
       Animated.sequence([
-        Animated.spring(dot1Scale, { toValue: 1.3, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot1Scale, { toValue: 1, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot2Scale, { toValue: 1.3, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot2Scale, { toValue: 1, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot3Scale, { toValue: 1.3, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot3Scale, { toValue: 1, tension: 300, friction: 10, useNativeDriver: true }),
+        Animated.spring(dot1Scale, { toValue: 1.2, tension: 300, friction: 10, useNativeDriver: true }),
+        Animated.spring(dot1Scale, { toValue: 0.8, tension: 300, friction: 10, useNativeDriver: true }),
+        Animated.spring(dot2Scale, { toValue: 1.2, tension: 300, friction: 10, useNativeDriver: true }),
+        Animated.spring(dot2Scale, { toValue: 0.8, tension: 300, friction: 10, useNativeDriver: true }),
+        Animated.spring(dot3Scale, { toValue: 1.2, tension: 300, friction: 10, useNativeDriver: true }),
+        Animated.spring(dot3Scale, { toValue: 0.8, tension: 300, friction: 10, useNativeDriver: true }),
       ])
     );
 
-    // Logo pulse animation
-    const logoPulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(logoGlow, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(logoGlow, { toValue: 0, duration: 1500, useNativeDriver: true }),
-      ])
-    );
-
-    // Start all animations
+    // Start animations
     mainSequence.start(() => {
       dotsAnimation.start();
-      logoPulse.start();
-      particleAnimations.forEach(anim => anim.start());
-
-      // Complete after animations
+      // Complete after brief delay
       setTimeout(() => {
         onAnimationComplete();
-      }, 1800);
+      }, 1500);
     });
 
     return () => {
-      bgAnimation.stop();
       dotsAnimation.stop();
-      logoPulse.stop();
-      particleAnimations.forEach(anim => anim.stop());
     };
   }, []);
-
-  const renderParticles = () => {
-    const icons = ["sparkles", "star", "diamond", "flash", "heart", "ribbon", "trophy", "medal", "rocket", "flame", "sunny", "moon"];
-    const colors = ["#A78BFA", "#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#F43F5E", "#EC4899", "#6366F1"];
-
-    return particles.map((particle, index) => {
-      const rotationValue = particle.rotation.interpolate({
-        inputRange: [0, 1],
-        outputRange: ["0deg", "360deg"],
-      });
-
-      return (
-        <Animated.View
-          key={index}
-          style={[
-            styles.particle,
-            {
-              transform: [
-                { translateX: particle.translateX },
-                { translateY: particle.translateY },
-                { scale: particle.scale },
-                { rotate: rotationValue },
-              ],
-              opacity: particle.opacity,
-            },
-          ]}
-        >
-          <Ionicons
-            name={icons[index % icons.length] as any}
-            size={12 + (index % 3) * 4}
-            color={colors[index % colors.length]}
-          />
-        </Animated.View>
-      );
-    });
-  };
-
-  const glowOpacity = logoGlow.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.8],
-  });
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Animated gradient background */}
+      {/* Clean gradient background */}
       <LinearGradient
-        colors={["#0F0F1A", "#1a1a2e", "#16213e", "#0F0F1A"]}
+        colors={["#0F0F1A", "#1a1a2e", "#16213e"]}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
 
-      {/* Decorative orbs */}
-      <View style={[styles.orb, styles.orb1]} />
-      <View style={[styles.orb, styles.orb2]} />
-      <View style={[styles.orb, styles.orb3]} />
-
-      {/* Particle effects */}
-      <View style={styles.particleContainer}>
-        {renderParticles()}
-      </View>
-
       {/* Logo Section */}
       <View style={styles.logoSection}>
-        {/* Pulsing rings */}
-        <Animated.View
-          style={[
-            styles.ring,
-            {
-              transform: [{ scale: ringScale1 }],
-              opacity: ringOpacity1,
-            },
-          ]}
-        />
-        <Animated.View
-          style={[
-            styles.ring,
-            {
-              transform: [{ scale: ringScale2 }],
-              opacity: ringOpacity2,
-            },
-          ]}
-        />
-        <Animated.View
-          style={[
-            styles.ring,
-            {
-              transform: [{ scale: ringScale3 }],
-              opacity: ringOpacity3,
-            },
-          ]}
-        />
-
-        {/* Logo glow */}
-        <Animated.View
-          style={[
-            styles.logoGlow,
-            { opacity: glowOpacity },
-          ]}
-        />
-        
-        {/* Title Centered */}
+        {/* Title */}
         <Animated.View
           style={[
             styles.titleContainer,
@@ -298,29 +88,21 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
           ]}
         >
           <Text style={styles.title}>HABIT</Text>
-          <LinearGradient
-            colors={["#8B5CF6", "#06B6D4"]}
-            style={styles.titleGradientContainer}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-            <Text style={styles.titleX}>X</Text>
-          </LinearGradient>
+          <View style={styles.titleXContainer}>
+            <LinearGradient
+              colors={["#8B5CF6", "#06B6D4"]}
+              style={styles.titleGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.titleX}>X</Text>
+            </LinearGradient>
+          </View>
         </Animated.View>
       </View>
 
-
-
       {/* Subtitle */}
-      <Animated.View
-        style={[
-          styles.subtitleContainer,
-          {
-            transform: [{ translateY: subtitleTranslateY }],
-            opacity: subtitleOpacity,
-          },
-        ]}
-      >
+      <Animated.View style={[styles.subtitleContainer, { opacity: subtitleOpacity }]}>
         <Text style={styles.subtitle}>Transform your life, one habit at a time</Text>
       </Animated.View>
 
@@ -350,66 +132,11 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
   },
-  orb: {
-    position: "absolute",
-    borderRadius: 999,
-  },
-  orb1: {
-    width: 300,
-    height: 300,
-    backgroundColor: "rgba(139, 92, 246, 0.15)",
-    top: -50,
-    left: -100,
-  },
-  orb2: {
-    width: 250,
-    height: 250,
-    backgroundColor: "rgba(6, 182, 212, 0.12)",
-    bottom: 100,
-    right: -80,
-  },
-  orb3: {
-    width: 180,
-    height: 180,
-    backgroundColor: "rgba(236, 72, 153, 0.1)",
-    bottom: -40,
-    left: -40,
-  },
-  particleContainer: {
-    position: "absolute",
-    width: 200,
-    height: 200,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  particle: {
-    position: "absolute",
-  },
   logoSection: {
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 60,
+    marginBottom: 48,
   },
-  ring: {
-    position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 2,
-    borderColor: "#8B5CF6",
-  },
-  logoGlow: {
-    position: "absolute",
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: "#8B5CF6",
-    shadowColor: "#8B5CF6",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 40,
-  },
-
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -420,11 +147,13 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     letterSpacing: 6,
   },
-  titleGradientContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
+  titleXContainer: {
     marginLeft: 4,
+  },
+  titleGradient: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   titleX: {
     fontSize: 42,

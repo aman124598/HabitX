@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,6 @@ import {
   Platform,
   ActivityIndicator,
   Keyboard,
-  Animated as RNAnimated,
-  Dimensions,
-  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,8 +19,6 @@ import { useTheme } from '../../lib/themeContext';
 import Theme, { getShadow } from '../../lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGoogleAuth } from '../../lib/useGoogleAuth';
-
-const { width, height } = Dimensions.get('window');
 
 interface LoginScreenProps {
   onSwitchToRegister: () => void;
@@ -52,50 +47,6 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
       loginWithGoogle(authResult);
     }
   }, [authResult, loginWithGoogle]);
-
-  // Animations
-  const logoScale = useRef(new RNAnimated.Value(0)).current;
-  const logoOpacity = useRef(new RNAnimated.Value(0)).current;
-  const cardTranslateY = useRef(new RNAnimated.Value(50)).current;
-  const cardOpacity = useRef(new RNAnimated.Value(0)).current;
-  const orb1Scale = useRef(new RNAnimated.Value(0)).current;
-  const orb2Scale = useRef(new RNAnimated.Value(0)).current;
-  const orb3Scale = useRef(new RNAnimated.Value(0)).current;
-  const buttonPulse = useRef(new RNAnimated.Value(1)).current;
-  const googleButtonScale = useRef(new RNAnimated.Value(1)).current;
-
-  useEffect(() => {
-    // Entrance animations
-    RNAnimated.sequence([
-      // Orbs entrance
-      RNAnimated.stagger(100, [
-        RNAnimated.spring(orb1Scale, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
-        RNAnimated.spring(orb2Scale, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
-        RNAnimated.spring(orb3Scale, { toValue: 1, tension: 60, friction: 8, useNativeDriver: true }),
-      ]),
-      // Logo entrance
-      RNAnimated.parallel([
-        RNAnimated.spring(logoScale, { toValue: 1, tension: 80, friction: 10, useNativeDriver: true }),
-        RNAnimated.timing(logoOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ]),
-      // Card entrance
-      RNAnimated.parallel([
-        RNAnimated.spring(cardTranslateY, { toValue: 0, tension: 60, friction: 12, useNativeDriver: true }),
-        RNAnimated.timing(cardOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ]),
-    ]).start();
-
-    // Button pulse animation
-    const pulse = RNAnimated.loop(
-      RNAnimated.sequence([
-        RNAnimated.timing(buttonPulse, { toValue: 1.02, duration: 1500, useNativeDriver: true }),
-        RNAnimated.timing(buttonPulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
-      ])
-    );
-    pulse.start();
-
-    return () => pulse.stop();
-  }, []);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -154,12 +105,6 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
                      typeof (global as any).__expo !== 'undefined';
 
     setIsGoogleSigningIn(true);
-    
-    // Button press animation
-    RNAnimated.sequence([
-      RNAnimated.timing(googleButtonScale, { toValue: 0.95, duration: 100, useNativeDriver: true }),
-      RNAnimated.timing(googleButtonScale, { toValue: 1, duration: 100, useNativeDriver: true }),
-    ]).start();
 
     try {
       const result = await signInWithGoogle();
@@ -207,11 +152,6 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
         end={{ x: 1, y: 1 }}
       />
 
-      {/* Decorative orbs */}
-      <RNAnimated.View style={[styles.orb, styles.orb1, { transform: [{ scale: orb1Scale }] }]} />
-      <RNAnimated.View style={[styles.orb, styles.orb2, { transform: [{ scale: orb2Scale }] }]} />
-      <RNAnimated.View style={[styles.orb, styles.orb3, { transform: [{ scale: orb3Scale }] }]} />
-
       <ScrollView 
         contentContainerStyle={[
           styles.scrollContent,
@@ -224,13 +164,7 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
         keyboardDismissMode="on-drag"
       >
         {/* Logo Section */}
-        <RNAnimated.View style={[
-          styles.logoContainer,
-          { 
-            opacity: logoOpacity,
-            transform: [{ scale: logoScale }] 
-          }
-        ]}>
+        <View style={styles.logoContainer}>
           <View style={styles.brandTextContainer}>
             <Text style={styles.brandText}>HABIT</Text>
             <LinearGradient
@@ -242,17 +176,10 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
               <Text style={styles.brandX}>X</Text>
             </LinearGradient>
           </View>
-        </RNAnimated.View>
+        </View>
 
         {/* Main Card */}
-        <RNAnimated.View style={[
-          styles.card,
-          getShadow('xl'),
-          {
-            opacity: cardOpacity,
-            transform: [{ translateY: cardTranslateY }]
-          }
-        ]}>
+        <View style={[styles.card, getShadow('xl')]}>
           <View style={styles.header}>
             <Text style={styles.title}>Welcome Back! 👋</Text>
             <Text style={styles.subtitle}>
@@ -262,25 +189,23 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
 
           <View style={styles.form}>
             {/* Google Sign-In Button */}
-            <RNAnimated.View style={{ transform: [{ scale: googleButtonScale }] }}>
-              <TouchableOpacity
-                style={[styles.googleButton, isAnyLoading && styles.disabledButton]}
-                onPress={handleGoogleSignIn}
-                disabled={isAnyLoading}
-                activeOpacity={0.8}
-              >
-                {isGoogleLoading || isGoogleSigningIn ? (
-                  <ActivityIndicator color="#4285F4" size="small" />
-                ) : (
-                  <>
-                    <View style={styles.googleIconContainer}>
-                      <Text style={styles.googleIcon}>G</Text>
-                    </View>
-                    <Text style={styles.googleButtonText}>Continue with Google</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </RNAnimated.View>
+            <TouchableOpacity
+              style={[styles.googleButton, isAnyLoading && styles.disabledButton]}
+              onPress={handleGoogleSignIn}
+              disabled={isAnyLoading}
+              activeOpacity={0.8}
+            >
+              {isGoogleLoading || isGoogleSigningIn ? (
+                <ActivityIndicator color="#4285F4" size="small" />
+              ) : (
+                <>
+                  <View style={styles.googleIconContainer}>
+                    <Text style={styles.googleIcon}>G</Text>
+                  </View>
+                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
 
             {/* Divider */}
             <View style={styles.divider}>
@@ -365,32 +290,30 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
             )}
 
             {/* Login Button */}
-            <RNAnimated.View style={{ transform: [{ scale: buttonPulse }] }}>
-              <TouchableOpacity
-                style={[styles.loginButton, isAnyLoading && styles.disabledButton]}
-                onPress={handleLogin}
-                disabled={isAnyLoading}
-                activeOpacity={0.8}
+            <TouchableOpacity
+              style={[styles.loginButton, isAnyLoading && styles.disabledButton]}
+              onPress={handleLogin}
+              disabled={isAnyLoading}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={isAnyLoading ? ['#6B7280', '#4B5563'] : ['#8B5CF6', '#7C3AED', '#6D28D9']}
+                style={styles.buttonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
               >
-                <LinearGradient
-                  colors={isAnyLoading ? ['#6B7280', '#4B5563'] : ['#8B5CF6', '#7C3AED', '#6D28D9']}
-                  style={styles.buttonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
-                  ) : (
-                    <>
-                      <Text style={styles.loginButtonText}>Sign In</Text>
-                      <View style={styles.buttonArrow}>
-                        <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-                      </View>
-                    </>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </RNAnimated.View>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.loginButtonText}>Sign In</Text>
+                    <View style={styles.buttonArrow}>
+                      <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                    </View>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
 
             {/* Footer */}
             <View style={styles.footer}>
@@ -406,7 +329,7 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
               </TouchableOpacity>
             </View>
           </View>
-        </RNAnimated.View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -415,31 +338,6 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  orb: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  orb1: {
-    width: 300,
-    height: 300,
-    backgroundColor: 'rgba(139, 92, 246, 0.12)',
-    top: -80,
-    right: -100,
-  },
-  orb2: {
-    width: 200,
-    height: 200,
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
-    bottom: 150,
-    left: -80,
-  },
-  orb3: {
-    width: 150,
-    height: 150,
-    backgroundColor: 'rgba(236, 72, 153, 0.08)',
-    bottom: -30,
-    right: -30,
   },
   scrollContent: {
     flexGrow: 1,

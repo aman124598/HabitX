@@ -19,8 +19,6 @@ import { useTheme } from "../../lib/themeContext";
 import { useTutorial } from "../../lib/tutorialContext";
 import { Theme } from "../../lib/theme";
 import { habitsService } from "../../lib/habitsApi";
-import { GamificationDashboard } from "../../components/gamification/GamificationDashboard";
-import { gamificationService } from "../../lib/gamificationService";
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import NotificationSettingsScreen from "../../components/settings/NotificationSettingsScreen";
@@ -30,7 +28,6 @@ const SETTINGS_KEYS = {
   NOTIFICATIONS_ENABLED: 'settings:notificationsEnabled',
   BACKUP_AUTO: 'settings:backupAuto',
   // THEME_CUSTOM removed
-  GAMIFICATION_ENABLED: 'settings:gamificationEnabled',
   DAILY_REMINDER_TIME: 'settings:dailyReminderTime',
 };
 
@@ -48,7 +45,6 @@ SafeNotifications.setNotificationHandler({
 interface AppSettings {
   notificationsEnabled: boolean;
   backupAuto: boolean;
-  gamificationEnabled: boolean;
   dailyReminderTime: string;
 }
 
@@ -161,7 +157,6 @@ export default function SettingsTab() {
   const [settings, setSettings] = useState<AppSettings>({
     notificationsEnabled: false,
     backupAuto: false,
-    gamificationEnabled: true,
     dailyReminderTime: '09:00',
   // customTheme removed
   });
@@ -172,16 +167,12 @@ export default function SettingsTab() {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [helpSearchQuery, setHelpSearchQuery] = useState('');
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
-  const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
 
   // Modal management
   const openModal = (modalType: string, data: any = {}) => {
     setModalData(data);
     setShowModal(modalType);
   };
-
-  // Update this to the hosted URL where you will publish the privacy policy HTML
-  const PRIVACY_POLICY_URL = 'https://aman1298.com/privacy-policy';
 
   const closeModal = () => {
     setShowModal(null);
@@ -215,12 +206,10 @@ export default function SettingsTab() {
     try {
       const notificationsEnabled = await AsyncStorage.getItem(SETTINGS_KEYS.NOTIFICATIONS_ENABLED);
       const backupAuto = await AsyncStorage.getItem(SETTINGS_KEYS.BACKUP_AUTO);
-      const gamificationEnabled = await AsyncStorage.getItem(SETTINGS_KEYS.GAMIFICATION_ENABLED);
       const dailyReminderTime = await AsyncStorage.getItem(SETTINGS_KEYS.DAILY_REMINDER_TIME);
       setSettings({
         notificationsEnabled: notificationsEnabled === 'true',
         backupAuto: backupAuto === 'true',
-        gamificationEnabled: gamificationEnabled !== 'false',
         dailyReminderTime: dailyReminderTime || '09:00',
       });
     } catch (error) {
@@ -235,7 +224,6 @@ export default function SettingsTab() {
       
       await AsyncStorage.setItem(SETTINGS_KEYS.NOTIFICATIONS_ENABLED, String(updatedSettings.notificationsEnabled));
       await AsyncStorage.setItem(SETTINGS_KEYS.BACKUP_AUTO, String(updatedSettings.backupAuto));
-      await AsyncStorage.setItem(SETTINGS_KEYS.GAMIFICATION_ENABLED, String(updatedSettings.gamificationEnabled));
       await AsyncStorage.setItem(SETTINGS_KEYS.DAILY_REMINDER_TIME, updatedSettings.dailyReminderTime);
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -500,26 +488,6 @@ export default function SettingsTab() {
     }
   };
 
-  const handleGamification = async () => {
-    const stats = await gamificationService.calculateUserStats(habits);
-    const earnedAchievements = gamificationService.getEarnedAchievements(stats);
-    
-    Alert.alert(
-      '🎮 Gamification System',
-      `Your Progress:\n• Level: ${stats.level}\n• Total XP: ${stats.totalXP}\n• Achievements: ${earnedAchievements.length}\n\nWant to see your full gamification dashboard?`,
-      [
-        { 
-          text: 'View Dashboard', 
-          onPress: () => {
-            setShowGamificationDashboard(true);
-          }
-        },
-        { text: 'Toggle Setting', onPress: () => saveSettings({ gamificationEnabled: !settings.gamificationEnabled }) },
-        { text: 'Cancel' }
-      ]
-    );
-  };
-
   const handleThemeCustomization = () => {
     Alert.alert(
       'Theme Customization',
@@ -530,23 +498,6 @@ export default function SettingsTab() {
         { text: 'Dark Theme', onPress: () => setThemeMode('dark') }
       ]
     );
-  };
-
-  const handleSocial = async () => {
-    try {
-      const stats = await gamificationService.calculateUserStats(habits);
-  const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.aman1298.habitx';
-      const promo = `Try Habit X — a tiny habit tracker with XP, streaks & challenges. Get it on Google Play: ${playStoreUrl} (or search "Habit X" on the App Store)`;
-
-      const message = `Check out my progress on Habit X!\nLevel: ${stats.level}\nXP: ${stats.totalXP}\nActive Streaks: ${stats.activeStreaks}\nLongest Streak: ${stats.longestStreak}\n\nJoin me in building better habits!\n\n${promo}`;
-
-      await Share.share({
-        message,
-        title: 'My Habit X Progress'
-      });
-    } catch (error) {
-      Alert.alert('Error', 'Could not share progress.');
-    }
   };
 
   return (
@@ -600,38 +551,6 @@ export default function SettingsTab() {
             subtitle="Morning/evening reminders, leaderboard updates, quiet hours"
             onPress={() => openModal('advancedNotifications')}
           />
-          <ThemedDivider style={styles.divider} />
-          <SettingsItem
-            icon="game-controller-outline"
-            title="Gamification (XP & Achievements)"
-            subtitle={settings.gamificationEnabled ? "Level up with achievements" : "Earn XP and unlock achievements"}
-            onPress={handleGamification}
-            rightElement={
-              <Switch
-                value={settings.gamificationEnabled}
-                onValueChange={() => saveSettings({ gamificationEnabled: !settings.gamificationEnabled })}
-              />
-            }
-          />
-        </SettingsSection>
-
-
-
-        {/* Customization */}
-        <SettingsSection title="👥 Social & Collaboration">
-          <SettingsItem
-            icon="people-outline"
-            title="Habit Challenges"
-            subtitle="Compete with friends"
-            onPress={() => router.push('/challenges')}
-          />
-          <ThemedDivider style={styles.divider} />
-          <SettingsItem
-            icon="share-outline"
-            title="Share Progress"
-            subtitle="Share achievements with friends"
-            onPress={handleSocial}
-          />
         </SettingsSection>
 
   {/* Notes & Attachments removed per user request */}
@@ -662,16 +581,6 @@ export default function SettingsTab() {
             title="Help & FAQ"
             subtitle="Get help and find answers"
             onPress={() => setShowHelpModal(true)}
-          />
-          <ThemedDivider style={styles.divider} />
-          <SettingsItem
-            icon="document-text-outline"
-            title="Privacy Policy"
-            subtitle="View our privacy & data practices"
-            onPress={() => {
-              // Open the hosted privacy policy URL. Update PRIVACY_POLICY_URL after hosting.
-              Linking.openURL(PRIVACY_POLICY_URL).catch(err => console.error('Failed to open privacy policy URL', err));
-            }}
           />
           <ThemedDivider style={styles.divider} />
           <SettingsItem
@@ -1113,27 +1022,27 @@ export default function SettingsTab() {
                   />
                 </View>
 
-                {/* Gamification */}
+                {/* Streaks */}
                 <View style={styles.faqSection}>
                   <ThemedText variant="primary" weight="bold" size="lg" style={styles.faqSectionTitle}>
-                    🏆 Gamification & Rewards
+                    🏆 Streaks & Progress
                   </ThemedText>
 
                   <FAQItem
-                    question="What are XP and levels?"
-                    answer="Earn XP by completing habits daily. Level up as you accumulate XP and unlock achievements. Check your progress in the Stats tab!"
-                    icon="star"
-                    isExpanded={expandedFAQ === 'xp-system'}
-                    onToggle={() => setExpandedFAQ(expandedFAQ === 'xp-system' ? null : 'xp-system')}
+                    question="How do streaks work?"
+                    answer="Complete habits daily to build streaks. The longer you maintain a habit, the higher your streak count grows. Streaks reset if you miss a day!"
+                    icon="flame"
+                    isExpanded={expandedFAQ === 'streaks'}
+                    onToggle={() => setExpandedFAQ(expandedFAQ === 'streaks' ? null : 'streaks')}
                     searchQuery={helpSearchQuery}
                   />
 
                   <FAQItem
-                    question="How do achievements work?"
-                    answer="Complete milestones like 7-day streaks, 30-day streaks, or 100-day streaks to earn special achievements and bonus XP!"
-                    icon="trophy"
-                    isExpanded={expandedFAQ === 'achievements'}
-                    onToggle={() => setExpandedFAQ(expandedFAQ === 'achievements' ? null : 'achievements')}
+                    question="How do I track my progress?"
+                    answer="Check the Stats tab to see your daily, weekly, and monthly progress. View completion rates, streak counts, and habit trends!"
+                    icon="stats-chart"
+                    isExpanded={expandedFAQ === 'progress'}
+                    onToggle={() => setExpandedFAQ(expandedFAQ === 'progress' ? null : 'progress')}
                     searchQuery={helpSearchQuery}
                   />
                 </View>
@@ -1184,31 +1093,6 @@ export default function SettingsTab() {
                     icon="download"
                     isExpanded={expandedFAQ === 'export'}
                     onToggle={() => setExpandedFAQ(expandedFAQ === 'export' ? null : 'export')}
-                    searchQuery={helpSearchQuery}
-                  />
-                </View>
-
-                {/* Challenges */}
-                <View style={styles.faqSection}>
-                  <ThemedText variant="primary" weight="bold" size="lg" style={styles.faqSectionTitle}>
-                    👥 Challenges & Social
-                  </ThemedText>
-
-                  <FAQItem
-                    question="How do habit challenges work?"
-                    answer="Create or join challenges to compete with friends. Track progress together and see who can maintain the longest streak!"
-                    icon="people"
-                    isExpanded={expandedFAQ === 'challenges'}
-                    onToggle={() => setExpandedFAQ(expandedFAQ === 'challenges' ? null : 'challenges')}
-                    searchQuery={helpSearchQuery}
-                  />
-
-                  <FAQItem
-                    question="How do I join a challenge?"
-                    answer="Go to the Challenges tab, browse available challenges, or use an invite code to join a private challenge."
-                    icon="enter"
-                    isExpanded={expandedFAQ === 'join-challenge'}
-                    onToggle={() => setExpandedFAQ(expandedFAQ === 'join-challenge' ? null : 'join-challenge')}
                     searchQuery={helpSearchQuery}
                   />
                 </View>
@@ -1269,13 +1153,6 @@ export default function SettingsTab() {
           </ThemedCard>
         </View>
       </Modal>
-      
-      {/* Gamification Dashboard */}
-      <GamificationDashboard
-        habits={habits}
-        visible={showGamificationDashboard}
-        onClose={() => setShowGamificationDashboard(false)}
-      />
     </ThemedView>
   );
 }

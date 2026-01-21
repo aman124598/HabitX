@@ -6,6 +6,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../lib/themeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -13,23 +14,44 @@ interface AnimatedBackgroundProps {
   children: React.ReactNode;
   colors?: string[];
   duration?: number;
+  variant?: 'default' | 'premium' | 'subtle';
 }
 
 export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   children,
-  colors = [
-    '#667eea',
-    '#764ba2',
-    '#f093fb',
-    '#f5576c',
-    '#4facfe',
-    '#00f2fe'
-  ],
-  duration = 8000,
+  colors: customColors,
+  duration = 12000,
+  variant = 'default',
 }) => {
+  const { colors: themeColors, isDark } = useTheme();
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const opacityAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0.15)).current;
+
+  // Premium gradient colors based on theme
+  const getPremiumColors = () => {
+    if (customColors) return customColors;
+    
+    if (variant === 'premium') {
+      return isDark 
+        ? ['#1E293B', '#0F172A', '#312E81', '#1E293B']
+        : ['#F5F3FF', '#EDE9FE', '#DBEAFE', '#F0FDFA'];
+    } else if (variant === 'subtle') {
+      return isDark
+        ? ['#0F172A', '#1E293B', '#0F172A']
+        : ['#FAFAFA', '#F5F5F5', '#FAFAFA'];
+    }
+    
+    // Default variant
+    return [
+      themeColors.brand.gradient[0],
+      themeColors.brand.gradientOcean[0],
+      themeColors.brand.gradientSunset[0],
+      themeColors.brand.gradient[1],
+    ];
+  };
+
+  const colors = getPremiumColors();
 
   useEffect(() => {
     const rotateAnimation = Animated.loop(
@@ -43,7 +65,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
     const scaleAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(scaleAnim, {
-          toValue: 1.1,
+          toValue: 1.2,
           duration: duration / 2,
           useNativeDriver: true,
         }),
@@ -58,23 +80,18 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
     const opacityAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: duration / 4,
+          toValue: variant === 'premium' ? 0.3 : 0.2,
+          duration: duration / 3,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
-          toValue: 0.6,
-          duration: duration / 4,
+          toValue: variant === 'premium' ? 0.15 : 0.08,
+          duration: duration / 3,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
-          toValue: 0.9,
-          duration: duration / 4,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0.8,
-          duration: duration / 4,
+          toValue: variant === 'premium' ? 0.25 : 0.15,
+          duration: duration / 3,
           useNativeDriver: true,
         }),
       ])
@@ -89,7 +106,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
       scaleAnimation.stop();
       opacityAnimation.stop();
     };
-  }, [duration]);
+  }, [duration, variant]);
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],

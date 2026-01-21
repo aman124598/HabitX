@@ -8,7 +8,6 @@ import {
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -18,31 +17,11 @@ interface ModernSplashScreenProps {
 
 const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComplete }) => {
   // Animation values
-
   const textOpacity = useRef(new Animated.Value(0)).current;
   const textTranslateY = useRef(new Animated.Value(30)).current;
   const progressWidth = useRef(new Animated.Value(0)).current;
-  const backgroundScale = useRef(new Animated.Value(1.2)).current;
-
-  // Create animated circles
-  const circles = useRef(
-    Array.from({ length: 3 }, () => ({
-      scale: new Animated.Value(0),
-      opacity: new Animated.Value(0.3),
-    }))
-  ).current;
 
   useEffect(() => {
-    // Background animation
-    const backgroundAnimation = Animated.timing(backgroundScale, {
-      toValue: 1,
-      duration: 2000,
-      useNativeDriver: true,
-    });
-
-    // Logo animations
-
-
     // Text animations
     const textAnimation = Animated.parallel([
       Animated.timing(textOpacity, {
@@ -65,41 +44,14 @@ const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComp
       useNativeDriver: false,
     });
 
-    // Circle animations
-    const circleAnimations = Animated.stagger(
-      200,
-      circles.map((circle) =>
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(circle.scale, {
-              toValue: 1,
-              duration: 1000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(circle.scale, {
-              toValue: 0,
-              duration: 1000,
-              useNativeDriver: true,
-            }),
-          ])
-        )
-      )
-    );
-
     // Execute all animations
-    backgroundAnimation.start();
     textAnimation.start();
     progressAnimation.start();
-    circleAnimations.start();
 
     // Complete splash screen
     setTimeout(() => {
       onAnimationComplete();
-    }, 3000);
-
-    return () => {
-      circleAnimations.stop();
-    };
+    }, 2000);
   }, []);
 
 
@@ -113,39 +65,13 @@ const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComp
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
-      {/* Animated background */}
-      <Animated.View
-        style={[
-          styles.backgroundContainer,
-          {
-            transform: [{ scale: backgroundScale }],
-          },
-        ]}
-      >
-        <LinearGradient
-          colors={['#667eea', '#764ba2', '#f093fb']}
-          style={styles.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-      </Animated.View>
-
-      {/* Animated circles */}
-      {circles.map((circle, index) => (
-        <Animated.View
-          key={index}
-          style={[
-            styles.circle,
-            {
-              width: 100 + index * 50,
-              height: 100 + index * 50,
-              borderRadius: (100 + index * 50) / 2,
-              transform: [{ scale: circle.scale }],
-              opacity: circle.opacity,
-            },
-          ]}
-        />
-      ))}
+      {/* Clean gradient background */}
+      <LinearGradient
+        colors={['#667eea', '#764ba2', '#f093fb']}
+        style={styles.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
 
       {/* Main content */}
       <View style={styles.content}>
@@ -205,20 +131,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backgroundContainer: {
-    position: 'absolute',
-    left: -width * 0.1,
-    right: -width * 0.1,
-    top: -height * 0.1,
-    bottom: -height * 0.1,
-  },
   gradient: {
-    flex: 1,
-  },
-  circle: {
     position: 'absolute',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   content: {
     alignItems: 'center',

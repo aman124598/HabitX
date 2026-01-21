@@ -8,10 +8,8 @@ import { AuthProvider, useAuth } from "../lib/authContext";
 import { ThemeProvider, useTheme } from "../lib/themeContext";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FirstInstallLogo from "../components/FirstInstallLogo";
-import { GamificationProvider } from "../lib/gamificationContext";
 import { TutorialProvider, useTutorial } from "../lib/tutorialContext";
 import { FriendsProvider } from "../lib/friendsContext";
-import { GamificationOverlay } from "../components/GamificationOverlay";
 import AuthScreen from "../components/auth/AuthScreen";
 import LoadingScreen from "../components/auth/LoadingScreen";
 import TutorialScreen from "../components/onboarding/TutorialScreen";
@@ -99,7 +97,6 @@ function RootLayoutNav() {
 
   return (
     <NotificationHandler>
-      <GamificationOverlay>
         <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.brand.primary} />
         <Stack
           screenOptions={{
@@ -175,7 +172,6 @@ function RootLayoutNav() {
           />
         </Stack>
         <ToastContainer position="top" />
-      </GamificationOverlay>
     </NotificationHandler>
   );
 }
@@ -199,11 +195,9 @@ export default function RootLayout() {
         <TutorialProvider>
           <ToastProvider maxToasts={5}>
             <ToastServiceProvider>
-              <GamificationProvider>
-                <FriendsProvider>
-                  <RootLayoutNav />
-                </FriendsProvider>
-              </GamificationProvider>
+              <FriendsProvider>
+                <RootLayoutNav />
+              </FriendsProvider>
             </ToastServiceProvider>
           </ToastProvider>
         </TutorialProvider>

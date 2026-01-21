@@ -35,7 +35,7 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   enabled: true,
   morningReminders: true,
   eveningReminders: true,
-  leaderboardUpdates: true,
+  leaderboardUpdates: false, // Disabled by default to reduce errors
   streakReminders: true,
   motivationalMessages: true,
   morningTime: '07:30',
@@ -203,11 +203,12 @@ class EnhancedNotificationService {
       }
 
       // Register background fetch for periodic checks
-      await BackgroundFetch.registerTaskAsync(LEADERBOARD_CHECK_TASK, {
-        minimumInterval: 15 * 60, // 15 minutes
-        stopOnTerminate: false,
-        startOnBoot: true,
-      });
+      // Leaderboard check disabled to reduce API calls and errors
+      // await BackgroundFetch.registerTaskAsync(LEADERBOARD_CHECK_TASK, {
+      //   minimumInterval: 15 * 60, // 15 minutes
+      //   stopOnTerminate: false,
+      //   startOnBoot: true,
+      // });
 
       await BackgroundFetch.registerTaskAsync(STREAK_CHECK_TASK, {
         minimumInterval: 30 * 60, // 30 minutes
@@ -296,14 +297,23 @@ class EnhancedNotificationService {
     console.log('Evening reminder sent');
   }
 
-  // Check leaderboard changes
+  // Check leaderboard changes - disabled by default to reduce API errors
   private async checkLeaderboardChanges() {
     try {
       if (!authService.isAuthenticated()) {
         return;
       }
+      
+      // Skip if leaderboard updates are disabled
+      if (!this.settings.leaderboardUpdates) {
+        return;
+      }
 
       const currentPosition = await leaderboardApi.getUserPosition();
+      if (!currentPosition || currentPosition.rank === null) {
+        return; // No valid position, skip
+      }
+      
       const lastPositionStr = await AsyncStorage.getItem(LAST_LEADERBOARD_POSITION_KEY);
       
       if (lastPositionStr) {

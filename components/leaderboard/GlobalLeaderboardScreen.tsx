@@ -231,18 +231,18 @@ const GlobalLeaderboardScreen: React.FC<GlobalLeaderboardScreenProps> = ({
             </View>
             <View style={styles.currentUserStat}>
               <ThemedText variant="inverse" size="lg" weight="bold">
-                {userPosition.totalXP.toLocaleString()}
+                {userPosition.activeStreaks || 0}
               </ThemedText>
               <ThemedText variant="inverse" size="xs">
-                Total XP
+                Streaks
               </ThemedText>
             </View>
             <View style={styles.currentUserStat}>
               <ThemedText variant="inverse" size="lg" weight="bold">
-                L{userPosition.level}
+                {userPosition.longestStreak || 0}
               </ThemedText>
               <ThemedText variant="inverse" size="xs">
-                Level
+                Best
               </ThemedText>
             </View>
           </View>
@@ -291,11 +291,6 @@ const GlobalLeaderboardScreen: React.FC<GlobalLeaderboardScreenProps> = ({
               <ThemedText variant="primary" size="lg" weight="semibold" style={styles.username}>
                 {entry.user.username}
               </ThemedText>
-              <View style={[styles.levelBadge, { backgroundColor: `${getXPBadgeColor(entry.level)}20` }]}>
-                <ThemedText variant="inverse" size="xs" weight="bold" style={{ color: getXPBadgeColor(entry.level) }}>
-                  L{entry.level}
-                </ThemedText>
-              </View>
             </View>
             
             <ThemedText variant="secondary" size="sm" style={styles.userEmail}>
@@ -325,13 +320,13 @@ const GlobalLeaderboardScreen: React.FC<GlobalLeaderboardScreenProps> = ({
             </View>
           </View>
 
-          {/* XP Section */}
+          {/* Streak Section */}
           <View style={styles.xpSection}>
             <ThemedText variant="primary" size="xl" weight="bold" style={styles.xpText}>
-              {entry.totalXP.toLocaleString()}
+              {entry.longestStreak}
             </ThemedText>
             <ThemedText variant="accent" size="xs" weight="medium" style={styles.xpLabel}>
-              XP
+              Best
             </ThemedText>
             <ThemedText variant="secondary" size="xs" style={styles.habitCount}>
               {entry.totalHabits} habits

@@ -107,12 +107,7 @@ export default function UserProfileScreen() {
     );
   };
 
-  const getXPBadgeColor = (level: number): string => {
-    if (level >= 50) return colors.status.success;
-    if (level >= 25) return colors.status.warning;
-    if (level >= 10) return colors.brand.primary;
-    return colors.text.secondary;
-  };
+
 
   const getFriendshipActionButton = () => {
     if (!profile || profile.friendshipStatus === 'self') return null;
@@ -187,9 +182,6 @@ export default function UserProfileScreen() {
           <ThemedText variant="inverse" size="xl" weight="bold">
             {profile?.username || 'User Profile'}
           </ThemedText>
-          <ThemedText variant="inverse" size="sm" style={styles.subtitle}>
-            Level {profile?.level || 1} • {profile?.totalXP.toLocaleString() || 0} XP
-          </ThemedText>
         </View>
       </View>
     </LinearGradient>
@@ -205,30 +197,13 @@ export default function UserProfileScreen() {
           <View style={styles.profileHeader}>
             <UserAvatar 
               username={profile.username}
-              level={profile.level}
               size="large"
-              showLevel
               style={styles.profileAvatar}
             />
             <View style={styles.profileInfo}>
               <ThemedText variant="primary" size="xxl" weight="bold">
                 {profile.username}
               </ThemedText>
-              <View style={styles.levelContainer}>
-                <View style={[styles.levelBadge, { backgroundColor: `${getXPBadgeColor(profile.level)}20` }]}>
-                  <ThemedText
-                    variant="tertiary"
-                    size="sm"
-                    weight="bold"
-                    style={{ color: getXPBadgeColor(profile.level) }}
-                  >
-                    Level {profile.level}
-                  </ThemedText>
-                </View>
-                <ThemedText variant="secondary" size="sm" style={styles.xpText}>
-                  {profile.totalXP.toLocaleString()} XP
-                </ThemedText>
-              </View>
               {profile.bio && (
                 <ThemedText variant="secondary" size="base" style={styles.bio}>
                   {profile.bio}

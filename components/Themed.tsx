@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
   interpolate,
 } from 'react-native-reanimated';
-import Theme, { getShadow, getGlassMorphism } from '../lib/theme';
+import Theme, { getShadow, getGlassMorphism, getDarkGlassMorphism } from '../lib/theme';
 import { useTheme } from '../lib/themeContext';
 
 // Animated Pressable for buttons
@@ -18,12 +18,14 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 // ==================== ThemedView ====================
 export interface ThemedViewProps {
   style?: StyleProp<ViewStyle>;
-  variant?: 'primary' | 'secondary' | 'tertiary' | 'card' | 'overlay' | 'glass';
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'card' | 'overlay' | 'glass' | 'glassLight' | 'glassDark';
   children: React.ReactNode;
+  gradient?: boolean;
+  gradientColors?: [string, string];
 }
 
-export function ThemedView({ style, variant = 'primary', children, ...props }: ThemedViewProps) {
-  const { colors } = useTheme();
+export function ThemedView({ style, variant = 'primary', children, gradient = false, gradientColors, ...props }: ThemedViewProps) {
+  const { colors, isDark } = useTheme();
   
   const getBackgroundColor = () => {
     switch (variant) {
@@ -32,15 +34,49 @@ export function ThemedView({ style, variant = 'primary', children, ...props }: T
       case 'tertiary': return colors.background.tertiary;
       case 'card': return colors.card.background;
       case 'overlay': return colors.background.overlay;
-      case 'glass': return 'rgba(255, 255, 255, 0.85)';
+      case 'glass': return colors.background.glass;
+      case 'glassLight': return colors.background.glassLight;
+      case 'glassDark': return colors.background.glassDark;
       default: return colors.background.primary;
     }
   };
+
+  if (gradient) {
+    return (
+      <LinearGradient
+        colors={gradientColors || colors.background.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[style]}
+      >
+        {children}
+      </LinearGradient>
+    );
+  }
+
+  // Use BlurView for glass variants on native platforms
+  if ((variant === 'glass' || variant === 'glassLight' || variant === 'glassDark') && Platform.OS !== 'web') {
+    return (
+      <BlurView
+        intensity={variant === 'glassLight' ? 80 : variant === 'glassDark' ? 100 : 90}
+        tint={isDark ? 'dark' : 'light'}
+        style={[
+          { backgroundColor: getBackgroundColor() },
+          style,
+        ]}
+        {...props}
+      >
+        {children}
+      </BlurView>
+    );
+  }
 
   return (
     <View
       style={[
         { backgroundColor: getBackgroundColor() },
+        (variant === 'glass' || variant === 'glassLight' || variant === 'glassDark') && Platform.OS === 'web' && 
+          (isDark ? getDarkGlassMorphism(0.7, 'medium') : getGlassMorphism(0.7, 'medium')) as ViewStyle,
         variant === 'card' && getShadow('md'),
         style,
       ]}
@@ -111,7 +147,7 @@ export function ThemedText({
 export interface ThemedButtonProps extends PressableProps {
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'outline' | 'ghost' | 'glass';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   gradient?: boolean;
   icon?: React.ReactNode;
@@ -119,6 +155,7 @@ export interface ThemedButtonProps extends PressableProps {
   loading?: boolean;
   fullWidth?: boolean;
   rounded?: boolean;
+  glow?: boolean;
   children: React.ReactNode;
 }
 
@@ -133,6 +170,7 @@ export function ThemedButton({
   loading = false,
   fullWidth = false,
   rounded = false,
+  glow = false,
   children, 
   disabled,
   onPress,
@@ -146,7 +184,7 @@ export function ThemedButton({
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.97, { damping: 15, stiffness: 400 });
+    scale.value = withSpring(0.96, { damping: 15, stiffness: 400 });
   };
 
   const handlePressOut = () => {
@@ -154,10 +192,10 @@ export function ThemedButton({
   };
   
   const sizeStyles = {
-    sm: { paddingVertical: 8, paddingHorizontal: 14, gap: 6 },
-    md: { paddingVertical: 12, paddingHorizontal: 18, gap: 8 },
-    lg: { paddingVertical: 14, paddingHorizontal: 22, gap: 10 },
-    xl: { paddingVertical: 18, paddingHorizontal: 28, gap: 12 },
+    sm: { paddingVertical: 10, paddingHorizontal: 16, gap: 6 },
+    md: { paddingVertical: 14, paddingHorizontal: 20, gap: 8 },
+    lg: { paddingVertical: 16, paddingHorizontal: 24, gap: 10 },
+    xl: { paddingVertical: 20, paddingHorizontal: 32, gap: 12 },
   };
 
   const textSizes: Record<string, 'sm' | 'base' | 'lg' | 'xl'> = {
@@ -186,6 +224,8 @@ export function ThemedButton({
         return { bg: 'transparent', text: colors.brand.primary, border: colors.brand.primary };
       case 'ghost':
         return { bg: 'transparent', text: colors.brand.primary };
+      case 'glass':
+        return { bg: colors.card.backgroundGlass, text: colors.text.primary, border: colors.card.borderGlass };
       default:
         return { bg: colors.brand.primary, text: colors.text.inverse };
     }
@@ -213,10 +253,11 @@ export function ThemedButton({
     sizeStyles[size],
     { 
       backgroundColor: buttonColors.bg,
-      borderRadius: rounded ? Theme.borderRadius.full : Theme.borderRadius.lg,
+      borderRadius: rounded ? Theme.borderRadius.full : Theme.borderRadius.xl,
     },
-    variant === 'outline' && { borderWidth: 2, borderColor: buttonColors.border },
-    variant === 'primary' && !gradient && getShadow('sm'),
+    (variant === 'outline' || variant === 'glass') && { borderWidth: 2, borderColor: buttonColors.border },
+    variant === 'primary' && !gradient && (glow ? getShadow('glow') : getShadow('md')),
+    variant === 'glass' && (isDark ? getDarkGlassMorphism(0.6, 'medium') : getGlassMorphism(0.6, 'medium')) as ViewStyle,
     fullWidth && { width: '100%' },
     style,
   ];
@@ -233,17 +274,48 @@ export function ThemedButton({
         <LinearGradient
           colors={colors.brand.gradient}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={[
             styles.button,
             sizeStyles[size],
-            { borderRadius: rounded ? Theme.borderRadius.full : Theme.borderRadius.lg },
-            getShadow('colored'),
+            { borderRadius: rounded ? Theme.borderRadius.full : Theme.borderRadius.xl },
+            glow ? getShadow('glow') : getShadow('colored'),
             style,
           ]}
         >
           {buttonContent}
         </LinearGradient>
+      </AnimatedPressable>
+    );
+  }
+
+  // Glass button with BlurView on native
+  if (variant === 'glass' && Platform.OS !== 'web') {
+    return (
+      <AnimatedPressable 
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={disabled ? undefined : onPress}
+        style={[animatedStyle, fullWidth && { width: '100%' }]}
+        {...props}
+      >
+        <BlurView
+          intensity={70}
+          tint={isDark ? 'dark' : 'light'}
+          style={[
+            styles.button,
+            sizeStyles[size],
+            { 
+              borderRadius: rounded ? Theme.borderRadius.full : Theme.borderRadius.xl,
+              borderWidth: 2,
+              borderColor: buttonColors.border,
+              overflow: 'hidden',
+            },
+            style,
+          ]}
+        >
+          {buttonContent}
+        </BlurView>
       </AnimatedPressable>
     );
   }
@@ -264,10 +336,11 @@ export function ThemedButton({
 // ==================== ThemedCard ====================
 export interface ThemedCardProps {
   style?: StyleProp<ViewStyle>;
-  variant?: 'default' | 'elevated' | 'outlined' | 'gradient' | 'glass';
+  variant?: 'default' | 'elevated' | 'outlined' | 'gradient' | 'glass' | 'glassDark' | 'premium';
   gradientColors?: [string, string];
   children: React.ReactNode;
   onPress?: () => void;
+  glow?: boolean;
 }
 
 export function ThemedCard({ 
@@ -276,6 +349,7 @@ export function ThemedCard({
   gradientColors,
   children, 
   onPress,
+  glow = false,
   ...props 
 }: ThemedCardProps) {
   const { colors, isDark } = useTheme();
@@ -287,7 +361,7 @@ export function ThemedCard({
 
   const handlePressIn = () => {
     if (onPress) {
-      scale.value = withSpring(0.98, { damping: 15, stiffness: 400 });
+      scale.value = withSpring(0.97, { damping: 15, stiffness: 400 });
     }
   };
 
@@ -299,7 +373,7 @@ export function ThemedCard({
   
   const getCardStyle = (): ViewStyle[] => {
     const baseStyle: ViewStyle = {
-      backgroundColor: isDark ? colors.card.backgroundDark : colors.card.background,
+      backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
       borderRadius: Theme.borderRadius.xl,
       padding: Theme.spacing.lg,
       overflow: 'hidden',
@@ -307,15 +381,39 @@ export function ThemedCard({
 
     switch (variant) {
       case 'elevated':
-        return [baseStyle, getShadow('lg')];
+        return [baseStyle, { borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }, glow ? getShadow('glow') : getShadow('lg')];
       case 'outlined':
-        return [baseStyle, { borderWidth: 1, borderColor: colors.border.light }, getShadow('xs')];
+        return [baseStyle, { 
+          borderWidth: 1.5, 
+          borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+        }, getShadow('sm')];
       case 'glass':
-        return [baseStyle, getGlassMorphism(0.85) as ViewStyle, getShadow('md')];
+        return [
+          baseStyle,
+          { borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' },
+          getShadow('md'),
+        ] as ViewStyle[];
+      case 'glassDark':
+        return [
+          baseStyle,
+          { borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
+          getShadow('lg'),
+        ] as ViewStyle[];
+      case 'premium':
+        return [
+          baseStyle,
+          {
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(168, 85, 247, 0.3)' : 'rgba(168, 85, 247, 0.15)',
+            backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+          },
+          glow ? getShadow('glow') : getShadow('md'),
+        ];
       case 'gradient':
         return [baseStyle];
       default:
-        return [baseStyle, getShadow('sm')];
+        return [baseStyle, { borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }, getShadow('sm')];
     }
   };
 
@@ -327,10 +425,10 @@ export function ThemedCard({
         end={{ x: 1, y: 1 }}
         style={[
           {
-            borderRadius: Theme.borderRadius.xl,
+            borderRadius: Theme.borderRadius.xxl,
             padding: Theme.spacing.lg,
           },
-          getShadow('colored'),
+          glow ? getShadow('glow') : getShadow('colored'),
           style,
         ]}
       >
@@ -351,6 +449,44 @@ export function ThemedCard({
       );
     }
     return cardContent;
+  }
+
+  // Glass cards with BlurView on native
+  if ((variant === 'glass' || variant === 'glassDark') && Platform.OS !== 'web') {
+    const cardView = (
+      <BlurView
+        intensity={variant === 'glassDark' ? 90 : 70}
+        tint={isDark ? 'dark' : 'light'}
+        style={[
+          {
+            borderRadius: Theme.borderRadius.xxl,
+            padding: Theme.spacing.lg,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: colors.card.borderGlass,
+          },
+          getShadow('md'),
+          style,
+        ]}
+        {...props}
+      >
+        {children}
+      </BlurView>
+    );
+
+    if (onPress) {
+      return (
+        <AnimatedPressable
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          onPress={onPress}
+          style={animatedStyle}
+        >
+          {cardView}
+        </AnimatedPressable>
+      );
+    }
+    return cardView;
   }
 
   const cardView = (
@@ -378,9 +514,10 @@ export function ThemedCard({
 // ==================== ThemedBadge ====================
 export interface ThemedBadgeProps {
   style?: ViewStyle;
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline';
+  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline' | 'glass' | 'premium';
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
+  glow?: boolean;
   children: React.ReactNode;
 }
 
@@ -389,14 +526,15 @@ export function ThemedBadge({
   variant = 'default',
   size = 'md',
   icon,
+  glow = false,
   children 
 }: ThemedBadgeProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const sizeStyles = {
-    sm: { paddingVertical: 2, paddingHorizontal: 8, fontSize: Theme.fontSize.xs },
-    md: { paddingVertical: 4, paddingHorizontal: 10, fontSize: Theme.fontSize.sm },
-    lg: { paddingVertical: 6, paddingHorizontal: 14, fontSize: Theme.fontSize.base },
+    sm: { paddingVertical: 3, paddingHorizontal: 10, fontSize: Theme.fontSize.xs },
+    md: { paddingVertical: 5, paddingHorizontal: 12, fontSize: Theme.fontSize.sm },
+    lg: { paddingVertical: 7, paddingHorizontal: 16, fontSize: Theme.fontSize.base },
   };
 
   const getVariantStyle = () => {
@@ -411,6 +549,10 @@ export function ThemedBadge({
         return { bg: colors.status.infoLight, text: colors.status.info };
       case 'outline':
         return { bg: 'transparent', text: colors.text.secondary, border: colors.border.medium };
+      case 'glass':
+        return { bg: colors.card.backgroundGlass, text: colors.text.primary, border: colors.card.borderGlass };
+      case 'premium':
+        return { bg: colors.brand.primary, text: colors.text.inverse };
       default:
         return { bg: colors.background.tertiary, text: colors.text.secondary };
     }
@@ -425,14 +567,22 @@ export function ThemedBadge({
         sizeStyles[size],
         {
           backgroundColor: variantStyle.bg,
-          borderWidth: variant === 'outline' ? 1 : 0,
+          borderWidth: (variant === 'outline' || variant === 'glass') ? 1.5 : 0,
           borderColor: variantStyle.border,
+          borderRadius: Theme.borderRadius.full,
         },
+        variant === 'glass' && (isDark ? getDarkGlassMorphism(0.5, 'light') : getGlassMorphism(0.5, 'light')) as ViewStyle,
+        variant === 'premium' && (glow ? getShadow('glow') : getShadow('colored')),
         style,
       ]}
     >
       {icon && <View style={{ marginRight: 4 }}>{icon}</View>}
-      <Text style={{ color: variantStyle.text, fontSize: sizeStyles[size].fontSize, fontWeight: '600' }}>
+      <Text style={{ 
+        color: variantStyle.text, 
+        fontSize: sizeStyles[size].fontSize, 
+        fontWeight: '600',
+        letterSpacing: 0.3,
+      }}>
         {children}
       </Text>
     </View>
@@ -473,67 +623,88 @@ export interface ThemedProgressBarProps {
   backgroundColor?: string;
   animated?: boolean;
   showLabel?: boolean;
+  gradient?: boolean;
+  gradientColors?: [string, string];
+  glow?: boolean;
 }
 
 export function ThemedProgressBar({ 
   progress, 
   style, 
-  height = 8,
+  height = 10,
   color,
   backgroundColor,
   animated = true,
   showLabel = false,
+  gradient = false,
+  gradientColors,
+  glow = false,
 }: ThemedProgressBarProps) {
   const { colors } = useTheme();
   const animatedWidth = useSharedValue(0);
 
   React.useEffect(() => {
-    animatedWidth.value = withTiming(Math.min(100, Math.max(0, progress)), { duration: 500 });
+    animatedWidth.value = withTiming(Math.min(100, Math.max(0, progress)), { duration: 600 });
   }, [progress]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     width: `${animatedWidth.value}%`,
   }));
 
+  const progressContent = gradient ? (
+    <LinearGradient
+      colors={gradientColors || colors.brand.gradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={[
+        styles.progressFill,
+        {
+          height,
+          borderRadius: height / 2,
+        },
+        animated ? animatedStyle : { width: `${Math.min(100, progress)}%` },
+        glow && getShadow('glow'),
+      ]}
+    />
+  ) : (
+    <Animated.View
+      style={[
+        styles.progressFill,
+        {
+          height,
+          backgroundColor: color || colors.brand.primary,
+          borderRadius: height / 2,
+        },
+        animated ? animatedStyle : { width: `${Math.min(100, progress)}%` },
+        glow && getShadow('glow'),
+      ]}
+    />
+  );
+
   return (
-    <View style={[styles.progressContainer, style]}>
-      <View
-        style={[
-          styles.progressTrack,
-          {
-            height,
-            backgroundColor: backgroundColor || colors.background.tertiary,
-            borderRadius: height / 2,
-          },
-        ]}
-      >
-        <Animated.View
-          style={[
-            styles.progressFill,
-            {
-              height,
-              backgroundColor: color || colors.brand.primary,
-              borderRadius: height / 2,
-            },
-            animated ? animatedStyle : { width: `${Math.min(100, progress)}%` },
-          ]}
-        />
-      </View>
-      {showLabel && (
-        <ThemedText variant="secondary" size="sm" weight="semibold" style={{ marginLeft: 8 }}>
-          {Math.round(progress)}%
-        </ThemedText>
-      )}
+    <View
+      style={[
+        styles.progressContainer,
+        { 
+          height, 
+          backgroundColor: backgroundColor || colors.background.secondary, 
+          borderRadius: height / 2 
+        },
+        style,
+      ]}
+    >
+      {progressContent}
     </View>
   );
 }
 
 // ==================== ThemedIconButton ====================
-export interface ThemedIconButtonProps extends PressableProps {
-  icon: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg';
-  variant?: 'default' | 'primary' | 'ghost' | 'danger';
+export interface ThemedIconButtonProps extends TouchableOpacityProps {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'default' | 'primary' | 'ghost' | 'danger' | 'glass' | 'premium';
   style?: ViewStyle;
+  glow?: boolean;
 }
 
 export function ThemedIconButton({ 
@@ -541,10 +712,11 @@ export function ThemedIconButton({
   size = 'md', 
   variant = 'default',
   style,
+  glow = false,
   onPress,
   ...props 
 }: ThemedIconButtonProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -552,27 +724,33 @@ export function ThemedIconButton({
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.9, { damping: 15, stiffness: 400 });
+    scale.value = withSpring(0.88, { damping: 15, stiffness: 400 });
   };
 
   const handlePressOut = () => {
     scale.value = withSpring(1, { damping: 15, stiffness: 400 });
   };
 
-  const sizeMap = { sm: 32, md: 40, lg: 48 };
+  const sizeMap = { sm: 36, md: 44, lg: 52, xl: 60 };
 
   const getVariantStyle = () => {
     switch (variant) {
       case 'primary':
-        return { backgroundColor: colors.brand.primary };
+        return { backgroundColor: colors.brand.primary, shadow: glow ? 'glow' : 'md' };
       case 'ghost':
-        return { backgroundColor: 'transparent' };
+        return { backgroundColor: 'transparent', shadow: 'none' };
       case 'danger':
-        return { backgroundColor: colors.status.errorLight };
+        return { backgroundColor: colors.status.errorLight, shadow: 'sm' };
+      case 'glass':
+        return { backgroundColor: colors.card.backgroundGlass, shadow: 'md' };
+      case 'premium':
+        return { backgroundColor: colors.brand.primary, shadow: glow ? 'glow' : 'colored' };
       default:
-        return { backgroundColor: colors.background.tertiary };
+        return { backgroundColor: colors.background.tertiary, shadow: 'xs' };
     }
   };
+
+  const variantStyle = getVariantStyle();
 
   return (
     <AnimatedPressable
@@ -586,13 +764,20 @@ export function ThemedIconButton({
           width: sizeMap[size],
           height: sizeMap[size],
           borderRadius: sizeMap[size] / 2,
+          backgroundColor: variantStyle.backgroundColor,
         },
-        getVariantStyle(),
+        variant === 'glass' && (isDark ? getDarkGlassMorphism(0.6, 'light') : getGlassMorphism(0.6, 'light')) as ViewStyle,
+        variantStyle.shadow !== 'none' && getShadow(variantStyle.shadow as any),
+        glow && getShadow('glow'),
         style,
       ]}
       {...props}
     >
-      {icon}
+      <MaterialIcons 
+        name={icon} 
+        size={sizeMap[size] * 0.6} 
+        color={variant === 'ghost' || variant === 'glass' ? colors.text.primary : '#FFFFFF'} 
+      />
     </AnimatedPressable>
   );
 }

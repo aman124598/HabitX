@@ -1,11 +1,12 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Platform } from "react-native";
 import { useTheme } from "../../lib/themeContext";
-import Theme, { getShadow } from "../../lib/theme";
+import Theme from "../../lib/theme";
 import { FEATURES } from "../../lib/config";
 
 export default function TabsLayout() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   
   return (
     <Tabs 
@@ -14,22 +15,17 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.brand.primary,
         tabBarInactiveTintColor: colors.text.tertiary,
         tabBarStyle: {
-          backgroundColor: colors.background.secondary,
-          borderTopColor: colors.border.light,
+          backgroundColor: isDark ? colors.background.primary : '#FFFFFF',
+          borderTopColor: isDark ? colors.border.light : colors.border.light,
           borderTopWidth: 1,
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 88,
-          shadowColor: colors.card.shadow,
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 8,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+          paddingTop: 12,
+          height: Platform.OS === 'ios' ? 88 : 68,
         },
         tabBarLabelStyle: {
-          fontSize: Theme.fontSize.sm,
+          fontSize: Theme.fontSize.xs,
           fontWeight: Theme.fontWeight.medium as any,
-          marginTop: 4,
+          marginTop: 2,
         },
         tabBarIconStyle: {
           marginTop: 4,
@@ -52,6 +48,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="challenges"
         options={{ 
+          href: null, // Hide from tab bar
           title: "Challenges", 
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 

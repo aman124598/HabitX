@@ -12,6 +12,9 @@ interface ThemeColors {
     overlay: string;
     glass: string;
     glassDark: string;
+    glassLight: string;
+    glassMedium: string;
+    gradient: [string, string];
   };
   text: {
     primary: string;
@@ -26,6 +29,7 @@ interface ThemeColors {
     medium: string;
     dark: string;
     focus: string;
+    glass: string;
   };
   brand: {
     primary: string;
@@ -35,6 +39,10 @@ interface ThemeColors {
     gradientAlt: [string, string];
     gradientWarm: [string, string];
     gradientCool: [string, string];
+    gradientSunset: [string, string];
+    gradientOcean: [string, string];
+    gradientForest: [string, string];
+    gradientRoyal: [string, string];
   };
   status: {
     success: string;
@@ -49,8 +57,11 @@ interface ThemeColors {
   card: {
     background: string;
     backgroundDark: string;
+    backgroundGlass: string;
+    backgroundGlassDark: string;
     shadow: string;
     border: string;
+    borderGlass: string;
   };
   button: {
     primary: string;
@@ -72,12 +83,15 @@ interface ThemeColors {
 
 const lightTheme: ThemeColors = {
   background: {
-    primary: Colors.gray[50],
-    secondary: Colors.white,
-    tertiary: Colors.gray[100],
+    primary: '#F8F9FA', // Clean light gray
+    secondary: '#FFFFFF',
+    tertiary: '#F1F3F5',
     overlay: 'rgba(15, 23, 42, 0.6)',
-    glass: 'rgba(255, 255, 255, 0.85)',
-    glassDark: 'rgba(15, 23, 42, 0.7)',
+    glass: '#FFFFFF',
+    glassDark: '#F8F9FA',
+    glassLight: '#FFFFFF',
+    glassMedium: '#F8F9FA',
+    gradient: ['#F8F9FA', '#FFFFFF'],
   },
   text: {
     primary: Colors.gray[900],
@@ -88,19 +102,24 @@ const lightTheme: ThemeColors = {
     muted: Colors.gray[500],
   },
   border: {
-    light: Colors.gray[200],
-    medium: Colors.gray[300],
+    light: 'rgba(203, 213, 225, 0.3)',
+    medium: 'rgba(203, 213, 225, 0.5)',
     dark: Colors.gray[400],
     focus: Colors.primary[400],
+    glass: 'rgba(255, 255, 255, 0.2)',
   },
   brand: {
     primary: Colors.primary[500],
-    secondary: Colors.secondary[500],
-    tertiary: Colors.primary[400],
-    gradient: [Colors.primary[500], Colors.secondary[500]],
-    gradientAlt: [Colors.primary[600], Colors.primary[400]],
-    gradientWarm: ['#F97316', '#FBBF24'],
-    gradientCool: [Colors.secondary[500], Colors.primary[400]],
+    secondary: Colors.primary[400],
+    tertiary: Colors.primary[300],
+    gradient: ['#A855F7', '#9333EA'],
+    gradientAlt: ['#9333EA', '#7E22CE'],
+    gradientWarm: ['#A855F7', '#9333EA'],
+    gradientCool: ['#9333EA', '#A855F7'],
+    gradientSunset: ['#A855F7', '#9333EA'],
+    gradientOcean: ['#9333EA', '#7E22CE'],
+    gradientForest: ['#A855F7', '#9333EA'],
+    gradientRoyal: ['#9333EA', '#A855F7'],
   },
   status: {
     success: Colors.success[500],
@@ -113,10 +132,13 @@ const lightTheme: ThemeColors = {
     infoLight: Colors.primary[100],
   },
   card: {
-    background: Colors.white,
-    backgroundDark: Colors.gray[800],
-    shadow: Colors.gray[900],
-    border: Colors.gray[100],
+    background: '#FFFFFF',
+    backgroundDark: '#1E293B',
+    backgroundGlass: '#FFFFFF',
+    backgroundGlassDark: '#1E293B',
+    shadow: Colors.gray[400],
+    border: 'rgba(0, 0, 0, 0.06)',
+    borderGlass: 'rgba(0, 0, 0, 0.04)',
   },
   button: {
     primary: Colors.primary[500],
@@ -140,10 +162,13 @@ const darkTheme: ThemeColors = {
   background: {
     primary: '#0F172A', // slate-950
     secondary: '#1E293B', // slate-800
-    tertiary: '#334155', // slate-700
+    tertiary: 'rgba(51, 65, 85, 0.95)', // slate-700 with transparency
     overlay: 'rgba(0, 0, 0, 0.8)',
-    glass: 'rgba(30, 41, 59, 0.85)',
-    glassDark: 'rgba(15, 23, 42, 0.9)',
+    glass: 'rgba(30, 41, 59, 0.7)',
+    glassDark: 'rgba(15, 23, 42, 0.85)',
+    glassLight: 'rgba(30, 41, 59, 0.85)',
+    glassMedium: 'rgba(30, 41, 59, 0.6)',
+    gradient: ['rgba(168, 85, 247, 0.1)', 'rgba(147, 51, 234, 0.1)'],
   },
   text: {
     primary: '#F8FAFC', // slate-50
@@ -154,19 +179,24 @@ const darkTheme: ThemeColors = {
     muted: '#94A3B8',
   },
   border: {
-    light: '#334155', // slate-700
-    medium: '#475569', // slate-600
+    light: 'rgba(51, 65, 85, 0.5)', // slate-700 with transparency
+    medium: 'rgba(71, 85, 105, 0.7)', // slate-600 with transparency
     dark: '#64748B', // slate-500
     focus: Colors.primary[400],
+    glass: 'rgba(255, 255, 255, 0.1)',
   },
   brand: {
     primary: Colors.primary[400],
-    secondary: Colors.secondary[400],
-    tertiary: Colors.primary[300],
-    gradient: [Colors.primary[500], Colors.secondary[500]],
-    gradientAlt: [Colors.primary[500], Colors.primary[300]],
-    gradientWarm: ['#FB923C', '#FCD34D'],
-    gradientCool: [Colors.secondary[400], Colors.primary[300]],
+    secondary: Colors.primary[300],
+    tertiary: Colors.primary[200],
+    gradient: ['#C084FC', '#A855F7'],
+    gradientAlt: ['#A855F7', '#9333EA'],
+    gradientWarm: ['#C084FC', '#A855F7'],
+    gradientCool: ['#A855F7', '#C084FC'],
+    gradientSunset: ['#C084FC', '#A855F7'],
+    gradientOcean: ['#A855F7', '#9333EA'],
+    gradientForest: ['#C084FC', '#A855F7'],
+    gradientRoyal: ['#A855F7', '#C084FC'],
   },
   status: {
     success: Colors.success[400],
@@ -179,10 +209,13 @@ const darkTheme: ThemeColors = {
     infoLight: 'rgba(139, 92, 246, 0.2)',
   },
   card: {
-    background: '#1E293B', // slate-800
+    background: '#1E293B',
     backgroundDark: '#0F172A',
+    backgroundGlass: '#1E293B',
+    backgroundGlassDark: '#0F172A',
     shadow: '#000000',
-    border: '#334155',
+    border: 'rgba(255, 255, 255, 0.08)',
+    borderGlass: 'rgba(255, 255, 255, 0.06)',
   },
   button: {
     primary: Colors.primary[500],

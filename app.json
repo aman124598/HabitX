@@ -3,10 +3,15 @@
     "name": "Habit X",
     "slug": "habitx",
     "scheme": "habitx",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "icon": "./assets/images/logo-minimal.png",
+    "splash": {
+      "image": "./assets/images/logo-minimal.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#8B5CF6"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -20,18 +25,15 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo-minimal.png",
-        "backgroundColor": "#E5A317"
+        "backgroundColor": "#8B5CF6"
       },
       "package": "com.aman1298.habitx",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
-        "SYSTEM_ALERT_WINDOW",
-        "WAKE_LOCK",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.WAKE_LOCK"
+        "WAKE_LOCK"
       ]
     },
     "web": {

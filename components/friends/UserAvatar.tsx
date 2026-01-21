@@ -3,26 +3,19 @@ import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '../Themed';
-import { useTheme } from '../../lib/themeContext';
 import Theme from '../../lib/theme';
 
 interface UserAvatarProps {
   username?: string;
   size?: 'small' | 'medium' | 'large';
-  level?: number;
   style?: ViewStyle;
-  showLevel?: boolean;
 }
 
 export function UserAvatar({ 
   username = '', 
   size = 'medium', 
-  level = 1, 
-  style, 
-  showLevel = false 
+  style,
 }: UserAvatarProps) {
-  const { colors } = useTheme();
-
   const sizeConfig = {
     small: { avatar: 40, icon: 20, text: 'sm' as const },
     medium: { avatar: 50, icon: 24, text: 'base' as const },
@@ -61,13 +54,6 @@ export function UserAvatar({
   const avatarColors = getAvatarColors(username);
   const initials = getInitials(username);
 
-  const getLevelBadgeColor = (level: number): string => {
-    if (level >= 50) return colors.status.success;
-    if (level >= 25) return colors.status.warning;
-    if (level >= 10) return colors.brand.primary;
-    return colors.text.secondary;
-  };
-
   return (
     <View style={[{ position: 'relative' }, style]}>
       <LinearGradient
@@ -96,31 +82,6 @@ export function UserAvatar({
           <Ionicons name="person" size={config.icon} color="rgba(255,255,255,0.8)" />
         )}
       </LinearGradient>
-
-      {showLevel && level > 1 && (
-        <View
-          style={[
-            styles.levelBadge,
-            {
-              backgroundColor: getLevelBadgeColor(level),
-              bottom: -2,
-              right: -2,
-              minWidth: size === 'small' ? 16 : 20,
-              height: size === 'small' ? 16 : 20,
-              borderRadius: size === 'small' ? 8 : 10,
-            },
-          ]}
-        >
-          <ThemedText
-            variant="inverse"
-            size="xs"
-            weight="bold"
-            style={styles.levelText}
-          >
-            {level}
-          </ThemedText>
-        </View>
-      )}
     </View>
   );
 }
@@ -139,16 +100,5 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-  },
-  levelBadge: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  levelText: {
-    fontSize: 10,
-    lineHeight: 12,
   },
 });

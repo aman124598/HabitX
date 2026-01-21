@@ -10,10 +10,7 @@ import { useLeaderboard } from '../../hooks/useLeaderboard';
 import { getToday, isCompletedToday, calculateOverallSuccessRate } from '../../lib/habitStats';
 import { Habit } from '../../lib/habitsApi';
 import { ThemedView, ThemedText, ThemedCard, ThemedButton, ThemedProgressBar } from '../../components/Themed';
-import { XPIndicator } from '../../components/gamification/XPIndicator';
-import { GamificationDashboard } from '../../components/gamification/GamificationDashboard';
 import StreakCelebration from '../../components/streaks/StreakCelebration';
-import { gamificationService } from '../../lib/gamificationService';
 import { useTheme } from '../../lib/themeContext';
 import Theme from '../../lib/theme';
 
@@ -119,19 +116,17 @@ export default function StatsTab() {
   const { habits, loading, refresh } = useHabits();
   const { userPosition, fetchUserPosition } = useLeaderboard();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month'>('week');
-  const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
 
   // Refresh data when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       refresh();
-      // Only fetch user position if user has XP
-      const totalXP = habits.reduce((sum, habit) => sum + (habit.xp || 0), 0);
-      if (totalXP > 0) {
-        fetchUserPosition().catch(console.error);
-      }
-    }, [refresh, fetchUserPosition, habits])
+      // Fetch user position - it will handle its own errors gracefully
+      fetchUserPosition().catch(() => {
+        // Silently ignore
+      });
+    }, [refresh, fetchUserPosition])
   );
 
   // Memoized calculations that update when habits or selected period change
@@ -186,12 +181,6 @@ export default function StatsTab() {
 
     return data;
   }, [habits, selectedPeriod]);
-
-  // Memoized gamification data
-  const gamificationData = useMemo(() => {
-    if (habits.length === 0) return null;
-    return gamificationService.getGamificationData(habits, gamificationService.getCachedUserGamification() || undefined);
-  }, [habits]);
 
   const getTotalStreakDays = useCallback(() => {
     return habits.reduce((total, habit) => total + habit.streak, 0);
@@ -321,48 +310,6 @@ export default function StatsTab() {
           </View>
         </ThemedCard>
 
-        {/* Gamification Section */}
-        {habits.length > 0 && (
-          <ThemedCard variant="elevated" style={styles.gamificationCard}>
-            <View style={styles.gamificationHeader}>
-              <View style={styles.gamificationTitleSection}>
-                <ThemedText variant="primary" size="lg" weight="bold">
-                  🎮 Level & Progress
-                </ThemedText>
-                <ThemedText variant="secondary" size="xs">
-                  Earn XP by completing habits
-                </ThemedText>
-              </View>
-              <View style={styles.gamificationButtons}>
-                <Pressable 
-                  onPress={() => {
-                    router.push('/GlobalLeaderboard');
-                  }}
-                  style={[styles.gamificationButton, styles.leaderboardButton]}
-                >
-                  <Ionicons name="trophy" size={12} color="white" />
-                  <ThemedText variant="inverse" size="xs" weight="medium">
-                    Leaderboard
-                  </ThemedText>
-                </Pressable>
-                <Pressable 
-                  onPress={() => {
-                    setShowGamificationDashboard(true);
-                  }}
-                  style={[styles.gamificationButton, styles.primaryButton]}
-                >
-                  <ThemedText variant="inverse" size="xs" weight="medium">
-                    View All
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </View>
-            <View style={styles.xpIndicatorContainer}>
-              <XPIndicator habits={habits} gamificationData={gamificationData} />
-            </View>
-          </ThemedCard>
-        )}
-
         {/* Quick Stats - Clean 2x2 Grid */}
         <View style={styles.statsSection}>
           <ThemedText variant="primary" size="lg" weight="bold" style={styles.sectionTitle}>
@@ -387,9 +334,9 @@ export default function StatsTab() {
             </Pressable>
             <View style={styles.statCardContainer}>
               <StatCard
-                icon="star"
-                value={gamificationData?.totalXP || 0}
-                label="Total XP"
+                icon="list"
+                value={habits.length}
+                label="Total Habits"
                 color={colors.brand.primary}
               />
             </View>
@@ -546,14 +493,6 @@ export default function StatsTab() {
         </ThemedCard>
       </ScrollView>
       
-      {/* Gamification Dashboard Modal */}
-      <GamificationDashboard
-        habits={habits}
-        visible={showGamificationDashboard}
-        onClose={() => setShowGamificationDashboard(false)}
-        gamificationData={gamificationData}
-      />
-
       {/* Streak Celebration Modal */}
       <Modal
         visible={showStreakCelebration}
@@ -806,48 +745,6 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: Theme.spacing.sm,
     textAlign: 'center',
-  },
-
-  gamificationCard: {
-    marginBottom: Theme.spacing.lg,
-    padding: Theme.spacing.md,
-  },
-
-  gamificationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.md,
-  },
-
-  gamificationTitleSection: {
-    flex: 1,
-  },
-
-  gamificationButtons: {
-    flexDirection: 'row',
-    gap: Theme.spacing.xs,
-  },
-
-  gamificationButton: {
-    paddingHorizontal: Theme.spacing.sm,
-    paddingVertical: Theme.spacing.xs,
-    borderRadius: Theme.borderRadius.md,
-  },
-
-  leaderboardButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#F59E0B', // Warning color
-  },
-
-  primaryButton: {
-    backgroundColor: '#3B82F6', // Primary color
-  },
-
-  xpIndicatorContainer: {
-    marginTop: Theme.spacing.sm,
   },
 
   periodButtonWrapper: {

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import authService, { User, LoginCredentials, RegisterCredentials, UpdateProfileCredentials } from './auth';
 import { signOut as firebaseSignOut } from './firebase';
-import { gamificationService } from './gamificationService';
 
 interface AuthContextType {
   user: User | null;
@@ -43,8 +42,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           const userData = await authService.getMe();
           setUser(userData);
-          // Initialize gamification data after successful auth
-          await gamificationService.initUserGamification();
         } catch (error) {
           // If token is invalid, clear stored auth
           console.log('Token expired or invalid, clearing auth');
@@ -65,8 +62,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true);
       const userData = await authService.login(credentials);
       setUser(userData);
-      // Initialize gamification data after successful login
-      await gamificationService.initUserGamification();
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -173,9 +168,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const user = await authService.verifyEmail(email, token);
       
       // After successful verification, user is now synced to MongoDB
-      // Set user and initialize gamification
       setUser(user);
-      await gamificationService.initUserGamification();
       
       console.log('✅ User verified and logged in:', user.username);
       return user;
@@ -201,8 +194,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       setUser(userData.user);
-      // Initialize gamification data after successful Google login
-      await gamificationService.initUserGamification();
       console.log('✅ Google login complete via context:', userData.user.username);
     } catch (error) {
       console.error('Google login context error:', error);

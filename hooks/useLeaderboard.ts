@@ -117,8 +117,10 @@ export function useLeaderboard(): UseLeaderboardReturn {
       const data = await leaderboardApi.getUserPosition();
       setUserPosition(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch user position');
-      throw err;
+      // Don't set error for user position failures - this is not critical
+      console.warn('Failed to fetch user position:', err.message || err);
+      // Set null to indicate no position available
+      setUserPosition(null);
     } finally {
       setLoading(false);
     }

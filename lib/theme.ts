@@ -1,21 +1,21 @@
 import { Platform } from 'react-native';
 
 export const Colors = {
-  // Primary Brand Colors - Vibrant Purple/Indigo
+  // Primary Brand Colors - Vibrant Purple/Indigo with Glassmorphic Touch
   primary: {
-    50: '#F5F3FF',
-    100: '#EDE9FE',
-    200: '#DDD6FE',
-    300: '#C4B5FD',
-    400: '#A78BFA',
-    500: '#8B5CF6', // Main brand color
-    600: '#7C3AED',
-    700: '#6D28D9',
-    800: '#5B21B6',
-    900: '#4C1D95',
+    50: '#FAF5FF',
+    100: '#F3E8FF',
+    200: '#E9D5FF',
+    300: '#D8B4FE',
+    400: '#C084FC',
+    500: '#A855F7', // Main brand color - more vibrant
+    600: '#9333EA',
+    700: '#7E22CE',
+    800: '#6B21A8',
+    900: '#581C87',
   },
   
-  // Secondary/Accent Colors - Vibrant Teal/Cyan
+  // Secondary/Accent Colors - Vibrant Teal/Cyan with depth
   secondary: {
     50: '#ECFEFF',
     100: '#CFFAFE',
@@ -71,7 +71,7 @@ export const Colors = {
     900: '#881337',
   },
   
-  // Neutral Colors - Slate
+  // Neutral Colors - Slate with enhanced contrast
   gray: {
     50: '#F8FAFC',
     100: '#F1F5F9',
@@ -90,18 +90,29 @@ export const Colors = {
   white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
+  
+  // Glassmorphic overlay colors
+  glass: {
+    light: 'rgba(255, 255, 255, 0.7)',
+    medium: 'rgba(255, 255, 255, 0.5)',
+    dark: 'rgba(0, 0, 0, 0.3)',
+    ultraLight: 'rgba(255, 255, 255, 0.9)',
+  },
 };
 
 export const Theme = {
   colors: {
-    // Background Colors
+    // Background Colors - Clean solid backgrounds
     background: {
-      primary: Colors.gray[50],
-      secondary: Colors.white,
-      tertiary: Colors.gray[100],
+      primary: '#F8F9FA', // Clean light gray
+      secondary: '#FFFFFF',
+      tertiary: '#F1F3F5',
       overlay: 'rgba(15, 23, 42, 0.6)',
-      glass: 'rgba(255, 255, 255, 0.8)',
-      glassDark: 'rgba(15, 23, 42, 0.7)',
+      glass: '#FFFFFF',
+      glassDark: '#1E293B',
+      glassLight: '#FFFFFF',
+      glassMedium: '#F8F9FA',
+      gradient: ['#F8F9FA', '#FFFFFF'],
     },
     
     // Text Colors
@@ -122,15 +133,19 @@ export const Theme = {
       focus: Colors.primary[400],
     },
     
-    // Brand Colors
+    // Brand Colors - Single Purple Theme
     brand: {
       primary: Colors.primary[500],
-      secondary: Colors.secondary[500],
-      tertiary: Colors.primary[400],
-      gradient: [Colors.primary[500], Colors.secondary[500]] as [string, string],
-      gradientAlt: [Colors.primary[600], Colors.primary[400]] as [string, string],
-      gradientWarm: ['#F97316', '#FBBF24'] as [string, string],
-      gradientCool: [Colors.secondary[500], Colors.primary[400]] as [string, string],
+      secondary: Colors.primary[400],
+      tertiary: Colors.primary[300],
+      gradient: ['#A855F7', '#9333EA'] as [string, string], // Purple gradient
+      gradientAlt: ['#9333EA', '#7E22CE'] as [string, string], // Deep purple
+      gradientWarm: ['#A855F7', '#9333EA'] as [string, string], // Purple
+      gradientCool: ['#9333EA', '#A855F7'] as [string, string], // Purple
+      gradientSunset: ['#A855F7', '#9333EA'] as [string, string], // Purple
+      gradientOcean: ['#9333EA', '#7E22CE'] as [string, string], // Purple
+      gradientForest: ['#A855F7', '#9333EA'] as [string, string], // Purple
+      gradientRoyal: ['#9333EA', '#A855F7'] as [string, string], // Purple
     },
     
     // Status Colors
@@ -145,12 +160,15 @@ export const Theme = {
       infoLight: Colors.primary[100],
     },
     
-    // Component Specific Colors
+    // Component Specific Colors - Clean solid cards
     card: {
-      background: Colors.white,
-      backgroundDark: Colors.gray[800],
-      shadow: Colors.gray[900],
-      border: Colors.gray[100],
+      background: '#FFFFFF',
+      backgroundDark: '#1E293B',
+      backgroundGlass: '#FFFFFF',
+      backgroundGlassDark: '#1E293B',
+      shadow: Colors.gray[400],
+      border: 'rgba(0, 0, 0, 0.06)',
+      borderGlass: 'rgba(0, 0, 0, 0.04)',
     },
     
     button: {
@@ -185,15 +203,15 @@ export const Theme = {
     xxxxl: 48,
   },
   
-  // Border Radius Scale
+  // Border Radius Scale with more organic curves
   borderRadius: {
-    xs: 4,
-    sm: 6,
-    md: 8,
-    lg: 12,
-    xl: 16,
-    xxl: 20,
-    xxxl: 28,
+    xs: 6,
+    sm: 10,
+    md: 14,
+    lg: 18,
+    xl: 24,
+    xxl: 32,
+    xxxl: 40,
     full: 9999,
   },
   
@@ -227,7 +245,7 @@ export const Theme = {
   },
 };
 
-// Enhanced shadow definitions with more depth
+// Clean shadow definitions - subtle and modern
 const ShadowStyles = {
   none: {
     shadowColor: Colors.black,
@@ -240,18 +258,18 @@ const ShadowStyles = {
   xs: {
     shadowColor: Colors.gray[900],
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
   },
   sm: {
     shadowColor: Colors.gray[900],
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 3,
+    shadowRadius: 4,
     elevation: 2,
-    boxShadow: '0 2px 4px rgba(15, 23, 42, 0.06)',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.06)',
   },
   md: {
     shadowColor: Colors.gray[900],
@@ -259,36 +277,43 @@ const ShadowStyles = {
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
-    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.08)',
   },
   lg: {
+    shadowColor: Colors.gray[900],
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.1)',
+  },
+  xl: {
     shadowColor: Colors.gray[900],
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 8,
-    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
-  },
-  xl: {
-    shadowColor: Colors.gray[900],
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.16,
-    shadowRadius: 24,
-    elevation: 12,
-    boxShadow: '0 12px 40px rgba(15, 23, 42, 0.16)',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
   },
   colored: {
     shadowColor: Colors.primary[500],
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+    boxShadow: '0 4px 16px rgba(168, 85, 247, 0.2)',
+  },
+  glow: {
+    shadowColor: Colors.primary[400],
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-    boxShadow: '0 8px 24px rgba(139, 92, 246, 0.3)',
+    shadowRadius: 12,
+    elevation: 4,
+    boxShadow: '0 0 16px rgba(168, 85, 247, 0.3)',
   },
 };
 
-// Platform-specific shadow helper
-export const getShadow = (shadowLevel: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'colored') => {
+export const getShadow = (shadowLevel: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'colored' | 'glow') => {
   const shadow = ShadowStyles[shadowLevel];
   if (Platform.OS === 'web') {
     return { boxShadow: shadow.boxShadow };
@@ -302,17 +327,49 @@ export const getShadow = (shadowLevel: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   };
 };
 
-// Glass morphism effect helper
-export const getGlassMorphism = (opacity: number = 0.8) => {
+// Enhanced Glass morphism effect helper with blur intensity options
+export const getGlassMorphism = (opacity: number = 0.7, blurIntensity: 'light' | 'medium' | 'strong' = 'medium') => {
+  const blurValues = {
+    light: '10px',
+    medium: '20px',
+    strong: '30px',
+  };
+  
   if (Platform.OS === 'web') {
     return {
       backgroundColor: `rgba(255, 255, 255, ${opacity})`,
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
+      backdropFilter: `blur(${blurValues[blurIntensity]}) saturate(180%)`,
+      WebkitBackdropFilter: `blur(${blurValues[blurIntensity]}) saturate(180%)`,
+      border: '1px solid rgba(255, 255, 255, 0.3)',
     };
   }
   return {
     backgroundColor: `rgba(255, 255, 255, ${opacity})`,
+    borderWidth: 1,
+    borderColor: `rgba(255, 255, 255, ${opacity * 0.5})`,
+  };
+};
+
+// Dark glass morphism effect
+export const getDarkGlassMorphism = (opacity: number = 0.7, blurIntensity: 'light' | 'medium' | 'strong' = 'medium') => {
+  const blurValues = {
+    light: '10px',
+    medium: '20px',
+    strong: '30px',
+  };
+  
+  if (Platform.OS === 'web') {
+    return {
+      backgroundColor: `rgba(30, 41, 59, ${opacity})`,
+      backdropFilter: `blur(${blurValues[blurIntensity]}) saturate(180%)`,
+      WebkitBackdropFilter: `blur(${blurValues[blurIntensity]}) saturate(180%)`,
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+    };
+  }
+  return {
+    backgroundColor: `rgba(30, 41, 59, ${opacity})`,
+    borderWidth: 1,
+    borderColor: `rgba(255, 255, 255, ${opacity * 0.2})`,
   };
 };
 

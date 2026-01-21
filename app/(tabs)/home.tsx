@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, Modal } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withSequence, withTiming } from 'react-native-reanimated';
 import Header from '../../components/habits/Header';
-import { useRouter } from 'expo-router';
-import HabitForm from '../../components/habits/HabitForm';
 import FullScreenHabitForm from '../../components/habits/FullScreenHabitForm';
 import HabitCard from '../../components/habits/HabitCard';
 import EmptyState from '../../components/habits/EmptyState';
-import { ThemedView, ThemedText, ThemedCard, ThemedBadge } from '../../components/Themed';
-import { XPIndicator } from '../../components/gamification/XPIndicator';
+import { ThemedView, ThemedText, ThemedCard } from '../../components/Themed';
 import { useHabits } from '../../hooks/useHabits';
 import { useAuth } from '../../lib/authContext';
 import { useTheme } from '../../lib/themeContext';
-import { getGreeting, calculateCurrentStreak, calculateOverallSuccessRate, calculateSuccessRate, isCompletedToday } from '../../lib/habitStats';
+import { getGreeting, calculateCurrentStreak, calculateSuccessRate, isCompletedToday } from '../../lib/habitStats';
 import Theme, { getShadow } from '../../lib/theme';
 
 function MotivationalCard({ message }: { message: string }) {
@@ -23,30 +19,52 @@ function MotivationalCard({ message }: { message: string }) {
   // Get emoji and color based on message type
   const getStyle = () => {
     if (message.includes('Perfect') || message.includes('🎉')) {
-      return { icon: 'trophy', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' };
+      return { 
+        icon: 'trophy', 
+        color: '#FBBF24', 
+        gradient: ['#FBBF24', '#F59E0B'] 
+      };
     } else if (message.includes('Great') || message.includes('💪')) {
-      return { icon: 'rocket', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.15)' };
+      return { 
+        icon: 'rocket', 
+        color: '#A855F7', 
+        gradient: ['#A855F7', '#9333EA'] 
+      };
     } else if (message.includes('halfway') || message.includes('🚀')) {
-      return { icon: 'trending-up', color: '#06B6D4', bg: 'rgba(6, 182, 212, 0.15)' };
+      return { 
+        icon: 'trending-up', 
+        color: '#06B6D4', 
+        gradient: ['#06B6D4', '#0891B2'] 
+      };
     } else if (message.includes('🔥')) {
-      return { icon: 'flame', color: '#F97316', bg: 'rgba(249, 115, 22, 0.15)' };
+      return { 
+        icon: 'flame', 
+        color: '#F97316', 
+        gradient: ['#F97316', '#EA580C'] 
+      };
     }
-    return { icon: 'star', color: colors.status.warning, bg: `${colors.status.warning}15` };
+    return { 
+      icon: 'star', 
+      color: colors.status.warning, 
+      gradient: [colors.status.warning, colors.status.warning] 
+    };
   };
   
   const style = getStyle();
   
   return (
-    <View style={[styles.motivationalCard, { backgroundColor: style.bg }]}>
+    <ThemedCard variant="default" style={styles.motivationalCard}>
       <View style={styles.motivationalContent}>
-        <View style={[styles.motivationalIconContainer, { backgroundColor: `${style.color}20` }]}>
-          <Ionicons name={style.icon as any} size={20} color={style.color} />
+        <View 
+          style={[styles.motivationalIconContainer, { backgroundColor: style.color }]}
+        >
+          <Ionicons name={style.icon as any} size={20} color="white" />
         </View>
-        <ThemedText variant="primary" weight="semibold" size="base" style={styles.motivationalText}>
+        <ThemedText variant="primary" weight="semibold" size="sm" style={styles.motivationalText}>
           {message}
         </ThemedText>
       </View>
-    </View>
+    </ThemedCard>
   );
 }
 
@@ -55,9 +73,7 @@ function MotivationalCard({ message }: { message: string }) {
 export default function HomeTab() {
   const { habits, loading, addHabit, toggleHabit, confirmDelete } = useHabits();
   const { user } = useAuth();
-  const { colors } = useTheme();
-  const { isDark, setThemeMode, themeMode } = useTheme();
-  const router = useRouter();
+  const { colors, isDark, setThemeMode } = useTheme();
   const [showAdd, setShowAdd] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [motivationalMessage, setMotivationalMessage] = useState('');
@@ -65,13 +81,12 @@ export default function HomeTab() {
 
   // Calculate dynamic stats
   const { greeting: baseGreeting, subtitle } = getGreeting();
-  // Personalize greeting with user's name
-  const greeting = user?.username ? `${baseGreeting}, ${user.username}!` : baseGreeting;
+  // Show just the greeting, username shown separately if needed
+  const greeting = baseGreeting;
   const currentStreak = calculateCurrentStreak(habits);
   // Use today's completion percentage in the header so the displayed
   // 'Success Rate' matches the counts shown elsewhere on the screen.
   const todaySuccessRate = calculateSuccessRate(habits);
-  const overallSuccessRate = calculateOverallSuccessRate(habits);
   const completedToday = habits.filter(h => isCompletedToday(h)).length;
 
   // Dynamic motivational messages based on progress
@@ -118,7 +133,7 @@ export default function HomeTab() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView variant="primary" style={styles.container}>
       <Animated.View style={headerAnimatedStyle}>
         <Header 
           greeting={greeting}
@@ -131,13 +146,6 @@ export default function HomeTab() {
           onToggleTheme={() => setThemeMode(isDark ? 'light' : 'dark')}
         />
       </Animated.View>
-      
-      {/* XP Progress Indicator */}
-      {habits.length > 0 && (
-        <View style={styles.xpCard}>
-          <XPIndicator habits={habits} />
-        </View>
-      )}
 
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
@@ -263,22 +271,19 @@ const styles = StyleSheet.create({
   
   motivationalCard: {
     marginBottom: Theme.spacing.md,
-    marginHorizontal: Theme.spacing.md,
-    borderRadius: Theme.borderRadius.xl,
+    borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.md,
-    minHeight: 60,
   },
   
   motivationalContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
   
   motivationalIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Theme.spacing.md,
@@ -315,11 +320,7 @@ const styles = StyleSheet.create({
   
   xpCard: {
     marginHorizontal: Theme.spacing.md,
-    marginBottom: Theme.spacing.md,
-    marginTop: Theme.spacing.sm,
-    backgroundColor: 'transparent',
-    borderRadius: Theme.borderRadius.lg,
-    minHeight: 80,
+    marginBottom: Theme.spacing.sm,
   },
   
   loadingContainer: {

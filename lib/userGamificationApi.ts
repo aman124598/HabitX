@@ -62,28 +62,32 @@ class UserGamificationService {
 
   async getUserGamification(): Promise<UserGamificationData> {
     try {
-      console.log('🎮 Fetching user gamification data...');
       const response = await authService.makeAuthenticatedRequest(getApiUrl('/auth/gamification'));
       
       if (!response.ok) {
+        // Don't log every failure - just return default
+        if (response.status === 401 || response.status === 403) {
+          // User not authenticated - this is expected, don't spam logs
+          const backup = await this.restoreUserGamificationBackup();
+          if (backup) return backup;
+          return { totalXP: 0, level: 1 };
+        }
         throw new Error(`Failed to fetch user gamification data: ${response.status}`);
       }
 
       const data: GamificationResponse<UserGamificationData> = await response.json();
-      console.log('📊 Server gamification data:', data.data);
       
       // Check if server returned suspicious zero values
       if (data.data.totalXP === 0 && data.data.level === 1) {
         const backup = await this.restoreUserGamificationBackup();
         if (backup && backup.totalXP > 0) {
           console.warn('⚠️ Server returned zero XP but backup exists with XP:', backup.totalXP);
-          console.warn('⚠️ This might indicate a data loss issue. Using backup data.');
           
           // Try to restore the backup to server
           try {
             await this.addXP(0); // This will trigger level recalculation on server
           } catch (restoreError) {
-            console.error('Failed to restore backup to server:', restoreError);
+            // Ignore restore errors
           }
           
           return backup;
@@ -95,20 +99,14 @@ class UserGamificationService {
       
       return data.data;
     } catch (error) {
-      console.error('❌ Get user gamification error:', error);
-      
-      // Try to use backup data as fallback
+      // Try to use backup data as fallback without spamming logs
       const backup = await this.restoreUserGamificationBackup();
       if (backup) {
-        console.log('🔄 Network error, using backup gamification data:', backup);
         return backup;
       }
       
-      // If no backup available, return default values but log the issue
-      console.error('💥 No backup available, using default values. This indicates a serious issue.');
-      const defaultData = { totalXP: 0, level: 1 };
-      await this.backupUserGamification(defaultData);
-      return defaultData;
+      // Return default values silently
+      return { totalXP: 0, level: 1 };
     }
   }
 

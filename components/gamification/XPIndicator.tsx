@@ -74,28 +74,25 @@ export function XPIndicator({ habits, compact = false, gamificationData }: XPInd
   }
 
   return (
-    <ThemedCard variant="elevated" style={styles.container}>
+    <ThemedCard variant="default" style={styles.container}>
       <View style={styles.header}>
         {/* Level Badge */}
-        <LinearGradient
-          colors={getLevelColor()}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.levelBadge}
+        <View
+          style={[styles.levelBadge, { backgroundColor: getLevelColor()[0] }]}
         >
-          <Ionicons name="star" size={18} color="white" />
-          <ThemedText variant="inverse" size="lg" weight="extrabold">
+          <Ionicons name="star" size={16} color="white" />
+          <ThemedText variant="inverse" size="base" weight="bold">
             {data.level}
           </ThemedText>
-        </LinearGradient>
+        </View>
         
         {/* XP Info */}
         <View style={styles.xpInfo}>
-          <ThemedText variant="primary" size="base" weight="bold">
+          <ThemedText variant="primary" size="sm" weight="semibold">
             Level {data.level}
           </ThemedText>
-          <ThemedText variant="secondary" size="sm">
-            {data.currentLevelXP} / {data.nextLevelXP} XP to next level
+          <ThemedText variant="secondary" size="xs">
+            {data.currentLevelXP} / {data.nextLevelXP} XP
           </ThemedText>
         </View>
         
@@ -132,9 +129,8 @@ export function XPIndicator({ habits, compact = false, gamificationData }: XPInd
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: Theme.spacing.lg,
-    padding: Theme.spacing.lg,
-    gap: Theme.spacing.md,
+    padding: Theme.spacing.md,
+    borderRadius: Theme.borderRadius.lg,
   },
   
   compactContainer: {
@@ -159,16 +155,17 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Theme.spacing.md,
+    gap: Theme.spacing.sm,
+    marginBottom: Theme.spacing.sm,
   },
   
   levelBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 1,
   },
   
   xpInfo: {
