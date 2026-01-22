@@ -13,9 +13,8 @@ WebBrowser.maybeCompleteAuthSession();
 // Web client ID from Firebase Console (OAuth 2.0 Client IDs)
 const WEB_CLIENT_ID = '1011701747502-9nod5hmp6dfutjnvra948ts928nml8ct.apps.googleusercontent.com';
 
-// For Android, you need the Web Client ID (type 3) from google-services.json
-// The Android client in Google Cloud Console should have your app's SHA-1 fingerprint
-const ANDROID_CLIENT_ID = WEB_CLIENT_ID;
+// Android client ID with SHA-1 fingerprint from Google Cloud Console
+const ANDROID_CLIENT_ID = '1011701747502-e09epg5833vd2vckcog3vktqrfo3a4ei.apps.googleusercontent.com';
 
 // For iOS, create an iOS OAuth client in Google Cloud Console
 const IOS_CLIENT_ID = WEB_CLIENT_ID;
