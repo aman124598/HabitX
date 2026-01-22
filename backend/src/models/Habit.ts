@@ -26,6 +26,9 @@ export interface IHabit {
   startDate: string;
   streak: number;
   lastCompletedOn?: string | null;
+  xp?: number;
+  badges?: string[];
+  sharedWith?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +54,9 @@ interface HabitDocument {
   startDate: string;
   streak: number;
   lastCompletedOn?: string | null;
+  xp?: number;
+  badges?: string[];
+  sharedWith?: string[];
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
 }
@@ -95,6 +101,9 @@ export const HabitRepository = {
       startDate: data.startDate,
       streak: data.streak || 0,
       lastCompletedOn: data.lastCompletedOn,
+      xp: data.xp ?? 0,
+      badges: data.badges ?? [],
+      sharedWith: data.sharedWith ?? [],
       createdAt: timestampToDate(data.createdAt) || new Date(),
       updatedAt: timestampToDate(data.updatedAt) || new Date(),
     };
@@ -120,6 +129,9 @@ export const HabitRepository = {
     if (habit.streak !== undefined) doc.streak = Math.max(0, habit.streak);
     if (habit.lastCompletedOn !== undefined) doc.lastCompletedOn = habit.lastCompletedOn;
     if (habit.lastBackupAt !== undefined) doc.lastBackupAt = dateToTimestamp(habit.lastBackupAt);
+    if (habit.xp !== undefined) doc.xp = habit.xp;
+    if (habit.badges !== undefined) doc.badges = habit.badges;
+    if (habit.sharedWith !== undefined) doc.sharedWith = habit.sharedWith;
     
     return doc;
   },

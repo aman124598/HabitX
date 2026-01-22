@@ -16,6 +16,9 @@ export interface IUser {
   passwordResetToken?: string;
   passwordResetTokenExpiry?: Date;
   firebaseUid?: string;
+  totalXP?: number;
+  level?: number;
+  isPublic?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +36,9 @@ interface UserDocument {
   passwordResetToken?: string;
   passwordResetTokenExpiry?: FirebaseFirestore.Timestamp;
   firebaseUid?: string;
+  totalXP?: number;
+  level?: number;
+  isPublic?: boolean;
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
 }
@@ -65,6 +71,9 @@ export const UserRepository = {
       passwordResetToken: data.passwordResetToken,
       passwordResetTokenExpiry: timestampToDate(data.passwordResetTokenExpiry),
       firebaseUid: data.firebaseUid,
+      totalXP: data.totalXP ?? 0,
+      level: data.level ?? 1,
+      isPublic: data.isPublic ?? true,
       createdAt: timestampToDate(data.createdAt) || new Date(),
       updatedAt: timestampToDate(data.updatedAt) || new Date(),
     };
@@ -87,6 +96,9 @@ export const UserRepository = {
     if (user.passwordResetToken !== undefined) doc.passwordResetToken = user.passwordResetToken;
     if (user.passwordResetTokenExpiry !== undefined) doc.passwordResetTokenExpiry = dateToTimestamp(user.passwordResetTokenExpiry);
     if (user.firebaseUid !== undefined) doc.firebaseUid = user.firebaseUid;
+    if (user.totalXP !== undefined) doc.totalXP = user.totalXP;
+    if (user.level !== undefined) doc.level = user.level;
+    if (user.isPublic !== undefined) doc.isPublic = user.isPublic;
     
     return doc;
   },
@@ -117,6 +129,9 @@ export const UserRepository = {
       passwordResetToken: userData.passwordResetToken,
       passwordResetTokenExpiry: dateToTimestamp(userData.passwordResetTokenExpiry),
       firebaseUid: userData.firebaseUid,
+      totalXP: userData.totalXP ?? 0,
+      level: userData.level ?? 1,
+      isPublic: userData.isPublic ?? true,
       createdAt: dateToTimestamp(now)!,
       updatedAt: dateToTimestamp(now)!,
     };
@@ -278,6 +293,25 @@ export const UserRepository = {
     
     const snapshot = await query.get();
     return snapshot.docs.map(doc => UserRepository.fromFirestore(doc)!).filter(Boolean);
+  },
+
+  /**
+   * Add XP to a user and calculate level
+   */
+  async addXP(id: string, xpToAdd: number): Promise<IUser | null> {
+    const user = await UserRepository.findById(id);
+    if (!user) return null;
+
+    const currentXP = user.totalXP || 0;
+    const newTotalXP = currentXP + xpToAdd;
+    
+    // Calculate level based on XP (simple formula: level = floor(totalXP / 100) + 1)
+    const newLevel = Math.floor(newTotalXP / 100) + 1;
+
+    return UserRepository.update(id, {
+      totalXP: newTotalXP,
+      level: newLevel,
+    });
   },
 };
 
