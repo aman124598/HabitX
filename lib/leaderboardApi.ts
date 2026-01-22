@@ -30,6 +30,8 @@ export interface UserPosition {
   totalXP: number;
   level: number;
   totalUsers: number;
+  activeStreaks?: number;
+  longestStreak?: number;
 }
 
 export const leaderboardApi = {

@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, PressableProps, Platform, StyleProp } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, PressableProps, Platform, StyleProp, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { MaterialIcons } from '@expo/vector-icons';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 

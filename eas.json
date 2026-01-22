@@ -11,7 +11,8 @@
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "developmentClient": false
     },
     "production-apk": {
       "distribution": "store",
@@ -19,7 +20,8 @@
       "android": {
         "buildType": "apk"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "developmentClient": false
     },
     "production-aab": {
       "distribution": "store",

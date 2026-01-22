@@ -160,12 +160,8 @@ dependencies {
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
 
-    // Add Firebase SDKs (specify without version since BoM manages them)
+    // Add only essential Firebase SDKs (removed analytics & dynamic-links to reduce size)
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-database")
-    implementation("com.google.firebase:firebase-storage")
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-dynamic-links")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

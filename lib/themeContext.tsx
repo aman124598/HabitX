@@ -79,6 +79,11 @@ interface ThemeColors {
     learning: string;
     lifestyle: string;
   };
+  surface: {
+    primary: string;
+    secondary: string;
+    tertiary: string;
+  };
 }
 
 const lightTheme: ThemeColors = {
@@ -156,6 +161,11 @@ const lightTheme: ThemeColors = {
     learning: '#8B5CF6',
     lifestyle: '#F59E0B',
   },
+  surface: {
+    primary: '#FFFFFF',
+    secondary: '#F8F9FA',
+    tertiary: '#F1F3F5',
+  },
 };
 
 const darkTheme: ThemeColors = {
@@ -232,6 +242,11 @@ const darkTheme: ThemeColors = {
     work: '#60A5FA',
     learning: '#A78BFA',
     lifestyle: '#FBBF24',
+  },
+  surface: {
+    primary: '#1E293B',
+    secondary: '#334155',
+    tertiary: '#475569',
   },
 };
 
