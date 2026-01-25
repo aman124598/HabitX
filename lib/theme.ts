@@ -104,90 +104,90 @@ export const Theme = {
   colors: {
     // Background Colors - Clean solid backgrounds
     background: {
-      primary: '#F8F9FA', // Clean light gray
-      secondary: '#FFFFFF',
+      primary: '#FFFFFF',
+      secondary: '#F8F9FA',
       tertiary: '#F1F3F5',
-      overlay: 'rgba(15, 23, 42, 0.6)',
+      overlay: 'rgba(0, 0, 0, 0.5)',
       glass: '#FFFFFF',
-      glassDark: '#1E293B',
+      glassDark: '#0A0A0A',
       glassLight: '#FFFFFF',
       glassMedium: '#F8F9FA',
-      gradient: ['#F8F9FA', '#FFFFFF'],
+      gradient: ['#FFFFFF', '#F8F9FA'],
     },
     
     // Text Colors
     text: {
-      primary: Colors.gray[900],
-      secondary: Colors.gray[600],
-      tertiary: Colors.gray[400],
-      inverse: Colors.white,
-      accent: Colors.primary[600],
-      muted: Colors.gray[500],
+      primary: '#0A0A0A',
+      secondary: '#4A4A4A',
+      tertiary: '#8A8A8A',
+      inverse: '#FFFFFF',
+      accent: '#DC2626',
+      muted: '#6A6A6A',
     },
     
     // Border Colors
     border: {
-      light: Colors.gray[200],
-      medium: Colors.gray[300],
-      dark: Colors.gray[400],
-      focus: Colors.primary[400],
+      light: 'rgba(0, 0, 0, 0.06)',
+      medium: 'rgba(0, 0, 0, 0.1)',
+      dark: 'rgba(0, 0, 0, 0.15)',
+      focus: '#DC2626',
     },
     
-    // Brand Colors - Single Purple Theme
+    // Brand Colors - Dark Red Theme
     brand: {
-      primary: Colors.primary[500],
-      secondary: Colors.primary[400],
-      tertiary: Colors.primary[300],
-      gradient: ['#A855F7', '#9333EA'] as [string, string], // Purple gradient
-      gradientAlt: ['#9333EA', '#7E22CE'] as [string, string], // Deep purple
-      gradientWarm: ['#A855F7', '#9333EA'] as [string, string], // Purple
-      gradientCool: ['#9333EA', '#A855F7'] as [string, string], // Purple
-      gradientSunset: ['#A855F7', '#9333EA'] as [string, string], // Purple
-      gradientOcean: ['#9333EA', '#7E22CE'] as [string, string], // Purple
-      gradientForest: ['#A855F7', '#9333EA'] as [string, string], // Purple
-      gradientRoyal: ['#9333EA', '#A855F7'] as [string, string], // Purple
+      primary: '#DC2626',
+      secondary: '#EF4444',
+      tertiary: '#FCA5A5',
+      gradient: ['#DC2626', '#B91C1C'] as [string, string],
+      gradientAlt: ['#EF4444', '#DC2626'] as [string, string],
+      gradientWarm: ['#DC2626', '#991B1B'] as [string, string],
+      gradientCool: ['#B91C1C', '#DC2626'] as [string, string],
+      gradientSunset: ['#EF4444', '#B91C1C'] as [string, string],
+      gradientOcean: ['#DC2626', '#7F1D1D'] as [string, string],
+      gradientForest: ['#DC2626', '#991B1B'] as [string, string],
+      gradientRoyal: ['#B91C1C', '#EF4444'] as [string, string],
     },
     
     // Status Colors
     status: {
-      success: Colors.success[500],
-      successLight: Colors.success[100],
-      warning: Colors.warning[500],
-      warningLight: Colors.warning[100],
-      error: Colors.error[500],
-      errorLight: Colors.error[100],
-      info: Colors.primary[500],
-      infoLight: Colors.primary[100],
+      success: '#16A34A',
+      successLight: '#DCFCE7',
+      warning: '#D97706',
+      warningLight: '#FEF3C7',
+      error: '#DC2626',
+      errorLight: '#FEE2E2',
+      info: '#DC2626',
+      infoLight: '#FEE2E2',
     },
     
-    // Component Specific Colors - Clean solid cards
+    // Component Specific Colors
     card: {
       background: '#FFFFFF',
-      backgroundDark: '#1E293B',
+      backgroundDark: '#0A0A0A',
       backgroundGlass: '#FFFFFF',
-      backgroundGlassDark: '#1E293B',
-      shadow: Colors.gray[400],
+      backgroundGlassDark: '#141414',
+      shadow: '#94A3B8',
       border: 'rgba(0, 0, 0, 0.06)',
       borderGlass: 'rgba(0, 0, 0, 0.04)',
     },
     
     button: {
-      primary: Colors.primary[500],
-      primaryHover: Colors.primary[600],
-      secondary: Colors.gray[100],
-      secondaryHover: Colors.gray[200],
-      success: Colors.success[500],
-      warning: Colors.warning[500],
-      error: Colors.error[500],
-      disabled: Colors.gray[300],
+      primary: '#DC2626',
+      primaryHover: '#B91C1C',
+      secondary: '#F1F3F5',
+      secondaryHover: '#E2E8F0',
+      success: '#16A34A',
+      warning: '#D97706',
+      error: '#DC2626',
+      disabled: '#CBD5E1',
     },
     
     // Category Colors
     category: {
-      health: '#10B981',
-      work: '#3B82F6',
-      learning: '#8B5CF6',
-      lifestyle: '#F59E0B',
+      health: '#16A34A',
+      work: '#2563EB',
+      learning: '#DC2626',
+      lifestyle: '#D97706',
     },
   },
   

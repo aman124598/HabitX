@@ -11,14 +11,13 @@ import {
   Platform,
   ActivityIndicator,
   Keyboard,
+  Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/authContext';
 import { useTheme } from '../../lib/themeContext';
 import { useTutorial } from '../../lib/tutorialContext';
-import Theme from '../../lib/theme';
-import { getShadow } from '../../lib/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface RegisterScreenProps {
   onSwitchToLogin: () => void;
@@ -30,24 +29,24 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const { register, isLoading } = useAuth();
   const { markAsNewUser } = useTutorial();
   const { colors } = useTheme();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const { useSafeAreaInsets } = require('react-native-safe-area-context');
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
       setKeyboardVisible(true);
       if (e?.endCoordinates?.height) setKeyboardHeight(e.endCoordinates.height);
-      console.log('Register keyboard did show, height:', e?.endCoordinates?.height);
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
       setKeyboardHeight(0);
-      console.log('Register keyboard did hide');
     });
     return () => { showSub.remove(); hideSub.remove(); };
   }, []);
@@ -89,8 +88,6 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
         password 
       });
       
-      // Registration creates Firebase user and sends verification email
-      // User will NOT be added to MongoDB until they verify
       Alert.alert(
         'Verification Email Sent! 📧',
         'Please check your inbox and click the verification link to complete your registration.',
@@ -98,7 +95,6 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
           {
             text: 'OK',
             onPress: () => {
-              // Navigate to email verification screen or login
               if (onEmailVerificationNeeded) {
                 onEmailVerificationNeeded(email.trim());
               } else {
@@ -113,19 +109,21 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
     }
   };
 
+  const getInputStyle = (inputName: string) => [
+    styles.inputWrapper,
+    focusedInput === inputName && styles.inputWrapperFocused,
+  ];
+
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? (insets.top + 20) : 0}
     >
-      {/* Background Gradient */}
-      <LinearGradient
-        colors={['#1a1a2e', '#16213e', '#0f3460']}
-        style={StyleSheet.absoluteFill}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
+      {/* Dark Background */}
+      <View style={StyleSheet.absoluteFill}>
+        <View style={styles.background} />
+      </View>
 
       <ScrollView 
         contentContainerStyle={[
@@ -138,25 +136,37 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Welcome Section */}
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeTitle}>Join Us!</Text>
+        {/* Logo Section */}
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../assets/images/logo-minimal.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.brandText}>HABIT<Text style={styles.brandX}>X</Text></Text>
         </View>
 
         {/* Main Card */}
-        <View style={[styles.card, getShadow('lg')]}>
+        <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.title}>Create Account ✨</Text>
+            <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>
-              Start your journey to building amazing habits! Join our community today.
+              Start your journey to building great habits
             </Text>
           </View>
 
           <View style={styles.form}>
             {/* Username Input */}
             <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="person-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+              <Text style={styles.inputLabel}>Username</Text>
+              <View style={getInputStyle('username')}>
+                <View style={styles.inputIconContainer}>
+                  <Ionicons 
+                    name="person" 
+                    size={18} 
+                    color={focusedInput === 'username' ? '#DC2626' : '#6B7280'} 
+                  />
+                </View>
                 <TextInput
                   style={styles.input}
                   value={username}
@@ -166,14 +176,23 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
+                  onFocus={() => setFocusedInput('username')}
+                  onBlur={() => setFocusedInput(null)}
                 />
               </View>
             </View>
 
             {/* Email Input */}
             <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+              <Text style={styles.inputLabel}>Email</Text>
+              <View style={getInputStyle('email')}>
+                <View style={styles.inputIconContainer}>
+                  <Ionicons 
+                    name="mail" 
+                    size={18} 
+                    color={focusedInput === 'email' ? '#DC2626' : '#6B7280'} 
+                  />
+                </View>
                 <TextInput
                   style={styles.input}
                   value={email}
@@ -184,39 +203,79 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!isLoading}
+                  onFocus={() => setFocusedInput('email')}
+                  onBlur={() => setFocusedInput(null)}
                 />
               </View>
             </View>
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={getInputStyle('password')}>
+                <View style={styles.inputIconContainer}>
+                  <Ionicons 
+                    name="lock-closed" 
+                    size={18} 
+                    color={focusedInput === 'password' ? '#DC2626' : '#6B7280'} 
+                  />
+                </View>
                 <TextInput
                   style={styles.input}
                   value={password}
                   onChangeText={setPassword}
                   placeholder="Create a password (min 6 chars)"
                   placeholderTextColor="#6B7280"
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   editable={!isLoading}
+                  onFocus={() => setFocusedInput('password')}
+                  onBlur={() => setFocusedInput(null)}
                 />
+                <TouchableOpacity 
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeButton}
+                >
+                  <Ionicons 
+                    name={showPassword ? 'eye-off' : 'eye'} 
+                    size={20} 
+                    color="#6B7280" 
+                  />
+                </TouchableOpacity>
               </View>
             </View>
 
             {/* Confirm Password Input */}
             <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="shield-checkmark-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+              <Text style={styles.inputLabel}>Confirm Password</Text>
+              <View style={getInputStyle('confirmPassword')}>
+                <View style={styles.inputIconContainer}>
+                  <Ionicons 
+                    name="shield-checkmark" 
+                    size={18} 
+                    color={focusedInput === 'confirmPassword' ? '#DC2626' : '#6B7280'} 
+                  />
+                </View>
                 <TextInput
                   style={styles.input}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder="Confirm your password"
                   placeholderTextColor="#6B7280"
-                  secureTextEntry
+                  secureTextEntry={!showConfirmPassword}
                   editable={!isLoading}
+                  onFocus={() => setFocusedInput('confirmPassword')}
+                  onBlur={() => setFocusedInput(null)}
                 />
+                <TouchableOpacity 
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={styles.eyeButton}
+                >
+                  <Ionicons 
+                    name={showConfirmPassword ? 'eye-off' : 'eye'} 
+                    size={20} 
+                    color="#6B7280" 
+                  />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -227,29 +286,17 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
               disabled={isLoading}
               activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={isLoading ? ['#6B7280', '#4B5563'] : ['#4F46E5', '#7C3AED']}
-                style={styles.buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.registerButtonText}>Create Account</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-                  </>
-                )}
-              </LinearGradient>
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.registerButtonText}>Create Account</Text>
+                  <View style={styles.buttonArrow}>
+                    <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                  </View>
+                </>
+              )}
             </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
 
             {/* Footer */}
             <View style={styles.footer}>
@@ -261,12 +308,11 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
                 activeOpacity={0.7}
               >
                 <Text style={styles.linkText}>Sign In</Text>
+                <Ionicons name="arrow-forward" size={14} color="#DC2626" />
               </TouchableOpacity>
             </View>
           </View>
         </View>
-
-        {/* Bottom spacing handled via dynamic padding */}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -276,135 +322,157 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  background: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+  },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
     paddingTop: 40,
   },
-  // When keyboard opens, align content to top to avoid bottom gap
   scrollContentKeyboard: {
     justifyContent: 'flex-start',
   },
-  welcomeContainer: {
+  logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 24,
   },
-  welcomeTitle: {
-    fontSize: 32,
-    fontWeight: '900' as any,
+  logo: {
+    width: 64,
+    height: 64,
+    marginBottom: 12,
+  },
+  brandText: {
+    fontSize: 28,
+    fontWeight: '800',
     color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-    letterSpacing: 1,
+    letterSpacing: 4,
+  },
+  brandX: {
+    color: '#DC2626',
   },
   card: {
-    backgroundColor: '#1F2937',
+    backgroundColor: '#141414',
     borderRadius: 24,
-    padding: 32,
+    padding: 24,
     marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: '#374151',
+    borderColor: '#1F1F1F',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold' as any,
-    color: '#F9FAFB',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#D1D5DB',
+    fontSize: 14,
+    color: '#9CA3AF',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20,
   },
   form: {
     width: '100%',
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 14,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#D1D5DB',
+    marginBottom: 6,
+    marginLeft: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#374151',
-    borderWidth: 1.5,
-    borderColor: '#4B5563',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
+    backgroundColor: '#1A1A1A',
+    borderWidth: 2,
+    borderColor: '#2A2A2A',
+    borderRadius: 14,
+    paddingHorizontal: 4,
   },
-  inputIcon: {
-    marginRight: 12,
+  inputWrapperFocused: {
+    borderColor: '#DC2626',
+    backgroundColor: 'rgba(220, 38, 38, 0.05)',
+  },
+  inputIconContainer: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: '#F9FAFB',
-    paddingVertical: 16,
+    fontSize: 15,
+    color: '#FFFFFF',
+    paddingVertical: 12,
+  },
+  eyeButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   registerButton: {
     marginTop: 8,
-    marginBottom: 24,
-    borderRadius: 16,
+    marginBottom: 16,
+    borderRadius: 14,
     overflow: 'hidden',
-  },
-  buttonGradient: {
+    backgroundColor: '#DC2626',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    gap: 8,
+    gap: 10,
   },
   registerButtonText: {
     fontSize: 16,
-    fontWeight: '600' as any,
+    fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  buttonArrow: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   disabledButton: {
     opacity: 0.6,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#4B5563',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    color: '#9CA3AF',
-    fontWeight: '500' as any,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
+    marginTop: 4,
   },
   footerText: {
     fontSize: 14,
     color: '#9CA3AF',
   },
   linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
   linkText: {
     fontSize: 14,
-    fontWeight: '600' as any,
-    color: '#8B5CF6',
+    fontWeight: '700',
+    color: '#DC2626',
   },
-  bottomSpacing: {},
 });

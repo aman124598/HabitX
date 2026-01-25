@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import Header from '../../components/habits/Header';
 import FullScreenHabitForm from '../../components/habits/FullScreenHabitForm';
 import HabitCard from '../../components/habits/HabitCard';
@@ -13,61 +13,6 @@ import { useTheme } from '../../lib/themeContext';
 import { getGreeting, calculateCurrentStreak, calculateSuccessRate, isCompletedToday } from '../../lib/habitStats';
 import Theme, { getShadow } from '../../lib/theme';
 
-function MotivationalCard({ message }: { message: string }) {
-  const { colors } = useTheme();
-  
-  // Get emoji and color based on message type
-  const getStyle = () => {
-    if (message.includes('Perfect') || message.includes('🎉')) {
-      return { 
-        icon: 'trophy', 
-        color: '#FBBF24', 
-        gradient: ['#FBBF24', '#F59E0B'] 
-      };
-    } else if (message.includes('Great') || message.includes('💪')) {
-      return { 
-        icon: 'rocket', 
-        color: '#A855F7', 
-        gradient: ['#A855F7', '#9333EA'] 
-      };
-    } else if (message.includes('halfway') || message.includes('🚀')) {
-      return { 
-        icon: 'trending-up', 
-        color: '#06B6D4', 
-        gradient: ['#06B6D4', '#0891B2'] 
-      };
-    } else if (message.includes('🔥')) {
-      return { 
-        icon: 'flame', 
-        color: '#F97316', 
-        gradient: ['#F97316', '#EA580C'] 
-      };
-    }
-    return { 
-      icon: 'star', 
-      color: colors.status.warning, 
-      gradient: [colors.status.warning, colors.status.warning] 
-    };
-  };
-  
-  const style = getStyle();
-  
-  return (
-    <ThemedCard variant="default" style={styles.motivationalCard}>
-      <View style={styles.motivationalContent}>
-        <View 
-          style={[styles.motivationalIconContainer, { backgroundColor: style.color }]}
-        >
-          <Ionicons name={style.icon as any} size={20} color="white" />
-        </View>
-        <ThemedText variant="primary" weight="semibold" size="sm" style={styles.motivationalText}>
-          {message}
-        </ThemedText>
-      </View>
-    </ThemedCard>
-  );
-}
-
 // Empty state is now a separate component
 
 export default function HomeTab() {
@@ -76,7 +21,6 @@ export default function HomeTab() {
   const { colors, isDark, setThemeMode } = useTheme();
   const [showAdd, setShowAdd] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [motivationalMessage, setMotivationalMessage] = useState('');
   const scaleAnim = useSharedValue(1);
 
   // Calculate dynamic stats
@@ -88,23 +32,6 @@ export default function HomeTab() {
   // 'Success Rate' matches the counts shown elsewhere on the screen.
   const todaySuccessRate = calculateSuccessRate(habits);
   const completedToday = habits.filter(h => isCompletedToday(h)).length;
-
-  // Dynamic motivational messages based on progress
-  useEffect(() => {
-    if (habits.length === 0) {
-      setMotivationalMessage("Start your first habit today! 🌟");
-    } else if (todaySuccessRate === 100) {
-      setMotivationalMessage("Perfect day! All habits completed! 🎉");
-    } else if (todaySuccessRate >= 75) {
-      setMotivationalMessage("Great progress! Keep it up! 💪");
-    } else if (todaySuccessRate >= 50) {
-      setMotivationalMessage("You're halfway there! 🚀");
-    } else if (todaySuccessRate > 0) {
-      setMotivationalMessage("Good start! Complete more habits today! ⭐");
-    } else {
-      setMotivationalMessage("Ready for a fresh start? Let's go! 🔥");
-    }
-  }, [habits, todaySuccessRate]);
 
   // Add subtle animation when stats change
   useEffect(() => {
@@ -151,11 +78,6 @@ export default function HomeTab() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Motivational Message */}
-        {motivationalMessage && habits.length > 0 && (
-          <MotivationalCard message={motivationalMessage} />
-        )}
-
         {/* Habit Form - show as full-screen card when adding a new habit */}
         <FullScreenHabitForm
           visible={showAdd}
@@ -267,31 +189,6 @@ const styles = StyleSheet.create({
   scrollContent: { 
     padding: Theme.spacing.md,
     paddingTop: Theme.spacing.lg,
-  },
-  
-  motivationalCard: {
-    marginBottom: Theme.spacing.md,
-    borderRadius: Theme.borderRadius.lg,
-    padding: Theme.spacing.md,
-  },
-  
-  motivationalContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  
-  motivationalIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Theme.spacing.md,
-  },
-  
-  motivationalText: {
-    flex: 1,
-    lineHeight: 20,
   },
   
   sectionHeader: {

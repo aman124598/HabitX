@@ -31,9 +31,8 @@ function getLocalUrl() {
 }
 
 // Resolve base URL based on env flags
-// Primary Render backend URL (deployed service). Use this as the default production backend.
-// Updated to the active Render service that deployed successfully per Render logs.
-const REMOTE_RENDER_URL = 'https://habitx.onrender.com/api';
+// Primary Railway backend URL (deployed service). Use this as the default production backend.
+const REMOTE_RENDER_URL = 'https://habitx-production.up.railway.app/api';
 const USE_LOCAL = String(process.env.EXPO_LOCAL_BACKEND).toLowerCase() === 'true';
 const OVERRIDE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 

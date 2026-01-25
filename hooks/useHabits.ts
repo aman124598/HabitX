@@ -92,8 +92,10 @@ export function useHabits() {
       console.log('Toggling habit:', { id, name: oldHabit.name, isCurrentlyCompleted, today, lastCompletedOn: oldHabit.lastCompletedOn });
 
       // Make API call WITHOUT optimistic update first
-      const updatedHabit = await habitsService.toggleHabitCompletion(id);
-      console.log('Server response for toggle:', { id, updatedHabit });
+      const response = await habitsService.toggleHabitCompletion(id);
+      const updatedHabit = response.habit;
+      const xpData = response.xp;
+      console.log('Server response for toggle:', { id, updatedHabit, xpData });
       
       // Only update state after successful API response
       setHabits(prev => prev.map(h => h.id === id ? updatedHabit : h));
@@ -105,9 +107,13 @@ export function useHabits() {
       
       console.log('Completion status check:', { wasCompleted, isNowCompleted, todayStr });
       
-  if (!wasCompleted && isNowCompleted) {
-        // Show completion toast
-        toast.success('Habit Completed!', `Great job completing "${oldHabit.name}"!`);
+      if (!wasCompleted && isNowCompleted) {
+        // Show XP earned toast
+        if (xpData && xpData.earned > 0) {
+          toast.success('⭐ XP Earned!', `+${xpData.earned} XP • Level ${xpData.level}`);
+        } else {
+          toast.success('Habit Completed!', `Great job completing "${oldHabit.name}"!`);
+        }
         
         // Check for streak milestones
         if (updatedHabit.streak === 7 || updatedHabit.streak === 30 || updatedHabit.streak === 100) {

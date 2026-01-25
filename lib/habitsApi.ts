@@ -145,7 +145,7 @@ class HabitsService {
     }
   }
 
-  async toggleHabitCompletion(id: string): Promise<Habit> {
+  async toggleHabitCompletion(id: string): Promise<{ habit: Habit; xp?: { earned: number; total: number; level: number } }> {
     try {
       console.log('🔄 Toggling habit completion for ID:', id);
       
@@ -178,9 +178,12 @@ class HabitsService {
       console.log('📝 Raw toggle response:', responseText);
       
       try {
-        const data: HabitResponse = JSON.parse(responseText);
+        const data = JSON.parse(responseText);
         console.log('✅ Parsed toggle response:', data);
-        return data.data as Habit;
+        return {
+          habit: data.data as Habit,
+          xp: data.xp,
+        };
       } catch (parseError) {
         console.error('❌ JSON parse error for toggle response:', parseError);
         throw new Error('Invalid response format from server');

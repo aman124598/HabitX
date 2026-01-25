@@ -4,94 +4,48 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
   StatusBar,
+  Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-
-const { width, height } = Dimensions.get('window');
 
 interface SimpleSplashScreenProps {
   onAnimationComplete: () => void;
 }
 
 const SimpleSplashScreen: React.FC<SimpleSplashScreenProps> = ({ onAnimationComplete }) => {
-  // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.3)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
-    // Create the animation sequence
-    const animationSequence = Animated.sequence([
-      // Fade in and scale up logo
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]),
-      
-      // Slide in title
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
+    // Simple fade in
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
         useNativeDriver: true,
       }),
-    ]);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 80,
+        friction: 12,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-    // Pulse animation
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
+    // Complete after delay
+    const timer = setTimeout(() => {
+      onAnimationComplete();
+    }, 1500);
 
-    // Execute main animation
-    animationSequence.start(() => {
-      // Start pulse animation
-      pulseAnimation.start();
-      
-      // Complete splash after delay
-      setTimeout(() => {
-        onAnimationComplete();
-      }, 2000);
-    });
-
-    return () => {
-      pulseAnimation.stop();
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
-      {/* Gradient background */}
-      <LinearGradient
-        colors={['#4c63d2', '#9c27b0', '#e91e63']}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
+      {/* Dark background */}
+      <View style={styles.background} />
       
       {/* Content */}
       <Animated.View
@@ -104,64 +58,15 @@ const SimpleSplashScreen: React.FC<SimpleSplashScreenProps> = ({ onAnimationComp
         ]}
       >
         {/* Logo */}
-        <Animated.View
-          style={[
-            styles.logoContainer,
-            {
-              transform: [{ scale: pulseAnim }],
-            },
-          ]}
-        >
-          <View style={styles.logoBackground}>
-            <Ionicons name="checkmark-circle" size={60} color="#ffffff" />
-          </View>
-        </Animated.View>
-        
+        <Image 
+          source={require('../assets/images/logo-minimal.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
         {/* Title */}
-        <Animated.View
-          style={[
-            styles.titleContainer,
-            {
-              transform: [{ translateY: slideAnim }],
-              opacity: fadeAnim,
-            },
-          ]}
-        >
-          <Text style={styles.title}>Habit Tracker</Text>
-          <Text style={styles.subtitle}>Build Better Habits</Text>
-        </Animated.View>
-      </Animated.View>
-      
-      {/* Loading dots */}
-      <Animated.View
-        style={[
-          styles.loadingContainer,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
-        <View style={styles.dotsContainer}>
-          {[0, 1, 2].map((index) => (
-            <Animated.View
-              key={index}
-              style={[
-                styles.dot,
-                {
-                  opacity: pulseAnim,
-                  transform: [
-                    {
-                      scale: Animated.add(
-                        pulseAnim,
-                        new Animated.Value(index * 0.1)
-                      ),
-                    },
-                  ],
-                },
-              ]}
-            />
-          ))}
-        </View>
+        <Text style={styles.title}>HABIT<Text style={styles.titleX}>X</Text></Text>
+        <Text style={styles.subtitle}>Build Better Habits</Text>
       </Animated.View>
     </View>
   );
@@ -173,71 +78,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gradient: {
+  background: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
+    backgroundColor: '#0A0A0A',
   },
   content: {
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  logoContainer: {
-    marginBottom: 40,
-  },
-  logoBackground: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  titleContainer: {
-    alignItems: 'center',
+  logo: {
+    width: 72,
+    height: 72,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 4,
     marginBottom: 8,
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+  },
+  titleX: {
+    color: '#DC2626',
   },
   subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    color: '#666666',
     textAlign: 'center',
-    fontWeight: '300',
-  },
-  loadingContainer: {
-    position: 'absolute',
-    bottom: 100,
-    alignItems: 'center',
-  },
-  dotsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    marginHorizontal: 4,
   },
 });
 

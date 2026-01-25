@@ -1,12 +1,30 @@
 import React from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Text } from 'react-native';
 import Theme from '../../lib/theme';
 
 export default function LoadingScreen() {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color={Theme.colors.brand.primary} />
-      <Text style={styles.text}>Loading...</Text>
+      <View style={styles.content}>
+        {/* App Logo */}
+        <Image 
+          source={require('../../assets/images/logo-minimal.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
+        {/* App Name */}
+        <Text style={styles.appName}>
+          HABIT<Text style={styles.appNameX}>X</Text>
+        </Text>
+
+        {/* Loading Indicator */}
+        <ActivityIndicator 
+          size="small" 
+          color="#DC2626" 
+          style={styles.loader}
+        />
+      </View>
     </View>
   );
 }
@@ -16,11 +34,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Theme.colors.background.primary,
+    backgroundColor: '#0A0A0A',
   },
-  text: {
-    marginTop: Theme.spacing.md,
-    fontSize: Theme.fontSize.base,
-    color: Theme.colors.text.secondary,
+  content: {
+    alignItems: 'center',
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: Theme.spacing.lg,
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 4,
+    marginBottom: Theme.spacing.xl,
+  },
+  appNameX: {
+    color: '#DC2626',
+  },
+  loader: {
+    marginTop: Theme.spacing.sm,
   },
 });

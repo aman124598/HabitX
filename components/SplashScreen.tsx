@@ -5,115 +5,74 @@ import {
   StyleSheet,
   Animated,
   StatusBar,
+  ActivityIndicator,
+  Image,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 
 interface SplashScreenProps {
   onAnimationComplete: () => void;
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
-  // Simple animation values
-  const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleTranslateY = useRef(new Animated.Value(20)).current;
-  const subtitleOpacity = useRef(new Animated.Value(0)).current;
-  const dotsOpacity = useRef(new Animated.Value(0)).current;
-  const dot1Scale = useRef(new Animated.Value(0.8)).current;
-  const dot2Scale = useRef(new Animated.Value(0.8)).current;
-  const dot3Scale = useRef(new Animated.Value(0.8)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
   useEffect(() => {
-    // Simple entrance animation
-    const mainSequence = Animated.sequence([
-      // Title entrance
-      Animated.parallel([
-        Animated.spring(titleTranslateY, { toValue: 0, tension: 80, friction: 12, useNativeDriver: true }),
-        Animated.timing(titleOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ]),
-      // Subtitle entrance
-      Animated.delay(100),
-      Animated.timing(subtitleOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      // Loading dots
-      Animated.timing(dotsOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
-    ]);
+    // Simple fade in animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 80,
+        friction: 12,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-    // Loading dots animation
-    const dotsAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.spring(dot1Scale, { toValue: 1.2, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot1Scale, { toValue: 0.8, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot2Scale, { toValue: 1.2, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot2Scale, { toValue: 0.8, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot3Scale, { toValue: 1.2, tension: 300, friction: 10, useNativeDriver: true }),
-        Animated.spring(dot3Scale, { toValue: 0.8, tension: 300, friction: 10, useNativeDriver: true }),
-      ])
-    );
+    // Complete after delay
+    const timer = setTimeout(() => {
+      onAnimationComplete();
+    }, 1500);
 
-    // Start animations
-    mainSequence.start(() => {
-      dotsAnimation.start();
-      // Complete after brief delay
-      setTimeout(() => {
-        onAnimationComplete();
-      }, 1500);
-    });
-
-    return () => {
-      dotsAnimation.stop();
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Clean gradient background */}
-      <LinearGradient
-        colors={["#0F0F1A", "#1a1a2e", "#16213e"]}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
+      {/* Dark background */}
+      <View style={styles.background} />
 
-      {/* Logo Section */}
-      <View style={styles.logoSection}>
+      {/* Content */}
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        {/* Logo */}
+        <Image 
+          source={require('../assets/images/logo-minimal.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
         {/* Title */}
-        <Animated.View
-          style={[
-            styles.titleContainer,
-            {
-              transform: [{ translateY: titleTranslateY }],
-              opacity: titleOpacity,
-            },
-          ]}
-        >
-          <Text style={styles.title}>HABIT</Text>
-          <View style={styles.titleXContainer}>
-            <LinearGradient
-              colors={["#8B5CF6", "#06B6D4"]}
-              style={styles.titleGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.titleX}>X</Text>
-            </LinearGradient>
-          </View>
-        </Animated.View>
-      </View>
+        <Text style={styles.title}>HABIT<Text style={styles.titleX}>X</Text></Text>
 
-      {/* Subtitle */}
-      <Animated.View style={[styles.subtitleContainer, { opacity: subtitleOpacity }]}>
-        <Text style={styles.subtitle}>Transform your life, one habit at a time</Text>
-      </Animated.View>
+        {/* Subtitle */}
+        <Text style={styles.subtitle}>Build Better Habits</Text>
 
-      {/* Loading indicator */}
-      <Animated.View style={[styles.loadingContainer, { opacity: dotsOpacity }]}>
-        <View style={styles.dotsContainer}>
-          <Animated.View style={[styles.dot, { transform: [{ scale: dot1Scale }] }]} />
-          <Animated.View style={[styles.dot, { transform: [{ scale: dot2Scale }] }]} />
-          <Animated.View style={[styles.dot, { transform: [{ scale: dot3Scale }] }]} />
-        </View>
-        <Text style={styles.loadingText}>Loading your journey</Text>
+        {/* Loading indicator */}
+        <ActivityIndicator size="small" color="#DC2626" style={styles.loader} />
       </Animated.View>
     </View>
   );
@@ -125,72 +84,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  gradient: {
+  background: {
     position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
+    backgroundColor: '#0A0A0A',
   },
-  logoSection: {
+  content: {
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 48,
   },
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 24,
   },
   title: {
-    fontSize: 42,
+    fontSize: 32,
     fontWeight: "800",
     color: "#FFFFFF",
-    letterSpacing: 6,
-  },
-  titleXContainer: {
-    marginLeft: 4,
-  },
-  titleGradient: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  titleX: {
-    fontSize: 42,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: 2,
-  },
-  subtitleContainer: {
-    paddingHorizontal: 40,
-    marginBottom: 60,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#94A3B8",
-    textAlign: "center",
-    fontWeight: "400",
-    letterSpacing: 0.5,
-    lineHeight: 24,
-  },
-  loadingContainer: {
-    alignItems: "center",
-  },
-  dotsContainer: {
-    flexDirection: "row",
-    gap: 8,
+    letterSpacing: 4,
     marginBottom: 12,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#8B5CF6",
+  titleX: {
+    color: "#DC2626",
   },
-  loadingText: {
+  subtitle: {
     fontSize: 14,
-    color: "#64748B",
-    letterSpacing: 1,
+    color: "#666666",
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  loader: {
+    marginTop: 8,
   },
 });
 

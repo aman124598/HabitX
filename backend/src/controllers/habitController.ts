@@ -200,6 +200,17 @@ export const deleteHabit = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+// XP rewards configuration
+const XP_REWARDS = {
+  HABIT_COMPLETION: 10,      // Base XP for completing a habit
+  STREAK_BONUS: 5,           // Bonus XP per streak day (capped)
+  STREAK_BONUS_CAP: 50,      // Max streak bonus
+  PERFECT_DAY_BONUS: 25,     // Bonus for completing all habits in a day
+  STREAK_MILESTONE_7: 50,    // Week streak bonus
+  STREAK_MILESTONE_30: 200,  // Month streak bonus
+  STREAK_MILESTONE_100: 500, // 100 day streak bonus
+};
+
 // @desc    Toggle habit completion for authenticated user
 // @route   POST /api/habits/:id/toggle
 // @access  Private
@@ -220,16 +231,41 @@ export const toggleHabitCompletion = asyncHandler(async (req: Request, res: Resp
   
   let newStreak = habit.streak;
   let newLastCompletedOn: string | null | undefined = habit.lastCompletedOn;
+  let xpEarned = 0;
   
   if (isCompletedToday) {
-    // Uncomplete
+    // Uncomplete - no XP changes (don't remove XP)
     newStreak = Math.max(0, habit.streak - 1);
     newLastCompletedOn = null;
   } else {
-    // Complete
+    // Complete - award XP
     const continuesStreak = habit.lastCompletedOn === yesterday;
     newStreak = continuesStreak ? habit.streak + 1 : 1;
     newLastCompletedOn = today;
+    
+    // Calculate XP earned
+    xpEarned = XP_REWARDS.HABIT_COMPLETION;
+    
+    // Streak bonus (capped)
+    const streakBonus = Math.min(newStreak * XP_REWARDS.STREAK_BONUS, XP_REWARDS.STREAK_BONUS_CAP);
+    xpEarned += streakBonus;
+    
+    // Streak milestones
+    if (newStreak === 7) xpEarned += XP_REWARDS.STREAK_MILESTONE_7;
+    if (newStreak === 30) xpEarned += XP_REWARDS.STREAK_MILESTONE_30;
+    if (newStreak === 100) xpEarned += XP_REWARDS.STREAK_MILESTONE_100;
+    
+    // Check for perfect day bonus
+    const allHabits = await HabitRepository.findByUserId(req.user.id);
+    const completedCount = allHabits.filter(h => h.lastCompletedOn === today || h.id === habit.id).length;
+    if (completedCount === allHabits.length && allHabits.length > 1) {
+      xpEarned += XP_REWARDS.PERFECT_DAY_BONUS;
+    }
+    
+    // Add XP to user
+    if (xpEarned > 0) {
+      await UserRepository.addXP(req.user.id, xpEarned);
+    }
   }
 
   const updateData: Partial<IHabit> = {
@@ -239,9 +275,17 @@ export const toggleHabitCompletion = asyncHandler(async (req: Request, res: Resp
 
   const updatedHabit = await HabitRepository.update(req.params.id, updateData);
 
+  // Get updated user data for XP info
+  const updatedUser = await UserRepository.findById(req.user.id);
+
   res.status(200).json({
     success: true,
     data: updatedHabit,
+    xp: {
+      earned: xpEarned,
+      total: updatedUser?.totalXP || 0,
+      level: updatedUser?.level || 1,
+    },
   });
 });
 

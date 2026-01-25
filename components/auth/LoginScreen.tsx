@@ -11,14 +11,12 @@ import {
   Platform,
   ActivityIndicator,
   Keyboard,
+  Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/authContext';
 import { useTheme } from '../../lib/themeContext';
-import Theme, { getShadow } from '../../lib/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useGoogleAuth } from '../../lib/useGoogleAuth';
 
 interface LoginScreenProps {
   onSwitchToRegister: () => void;
@@ -30,23 +28,11 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  const { login, isLoading, loginWithGoogle } = useAuth();
+  const { login, isLoading } = useAuth();
   const { colors } = useTheme();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const insets = useSafeAreaInsets();
-  
-  // Google Auth
-  const { signInWithGoogle, isLoading: isGoogleLoading, isReady: isGoogleReady, error: googleError, authResult } = useGoogleAuth();
-  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
-
-  // Handle successful Google auth result
-  useEffect(() => {
-    if (authResult) {
-      console.log('✅ Google auth result received, updating context...');
-      loginWithGoogle(authResult);
-    }
-  }, [authResult, loginWithGoogle]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -64,13 +50,6 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
       hideSub.remove();
     };
   }, []);
-
-  // Show Google auth errors
-  useEffect(() => {
-    if (googleError) {
-      Alert.alert('Google Sign-In Error', googleError);
-    }
-  }, [googleError]);
 
   const contentBottomPadding = useMemo(() => {
     const base = 40;
@@ -94,49 +73,10 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    if (!isGoogleReady) {
-      Alert.alert('Please Wait', 'Google Sign-In is initializing...');
-      return;
-    }
-
-    // Check if running in Expo Go (which doesn't support OAuth properly)
-    const isExpoGo = !!(global as any).expo?.modules?.ExpoGo || 
-                     typeof (global as any).__expo !== 'undefined';
-
-    setIsGoogleSigningIn(true);
-
-    try {
-      const result = await signInWithGoogle();
-      if (result) {
-        console.log('✅ Google sign-in initiated');
-        // The hook handles the rest via useEffect
-      }
-    } catch (error: any) {
-      console.error('Google sign-in error:', error);
-      
-      // Check for OAuth compliance error
-      const errorMessage = error?.message || '';
-      if (errorMessage.includes('OAuth') || errorMessage.includes('comply')) {
-        Alert.alert(
-          'Google Sign-In Not Available',
-          'Google Sign-In requires a development build. Please use email/password login for now, or build the app with "eas build --profile development".',
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert('Error', errorMessage || 'Google sign-in failed');
-      }
-    } finally {
-      setIsGoogleSigningIn(false);
-    }
-  };
-
   const getInputStyle = (inputName: string) => [
     styles.inputWrapper,
     focusedInput === inputName && styles.inputWrapperFocused,
   ];
-
-  const isAnyLoading = isLoading || isGoogleLoading || isGoogleSigningIn;
 
   return (
     <KeyboardAvoidingView 
@@ -144,13 +84,10 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
       behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? (insets.top + 20) : 0}
     >
-      {/* Background Gradient */}
-      <LinearGradient
-        colors={['#0F0F1A', '#1a1a2e', '#16213e']}
-        style={StyleSheet.absoluteFill}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
+      {/* Dark Background */}
+      <View style={StyleSheet.absoluteFill}>
+        <View style={styles.background} />
+      </View>
 
       <ScrollView 
         contentContainerStyle={[
@@ -165,57 +102,24 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
       >
         {/* Logo Section */}
         <View style={styles.logoContainer}>
-          <View style={styles.brandTextContainer}>
-            <Text style={styles.brandText}>HABIT</Text>
-            <LinearGradient
-              colors={['#8B5CF6', '#06B6D4']}
-              style={styles.brandXContainer}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.brandX}>X</Text>
-            </LinearGradient>
-          </View>
+          <Image 
+            source={require('../../assets/images/logo-minimal.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.brandText}>HABIT<Text style={styles.brandX}>X</Text></Text>
         </View>
 
         {/* Main Card */}
-        <View style={[styles.card, getShadow('xl')]}>
+        <View style={styles.card}>
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back! 👋</Text>
+            <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>
               Sign in to continue your habit journey
             </Text>
           </View>
 
           <View style={styles.form}>
-            {/* Google Sign-In Button */}
-            <TouchableOpacity
-              style={[styles.googleButton, isAnyLoading && styles.disabledButton]}
-              onPress={handleGoogleSignIn}
-              disabled={isAnyLoading}
-              activeOpacity={0.8}
-            >
-              {isGoogleLoading || isGoogleSigningIn ? (
-                <ActivityIndicator color="#4285F4" size="small" />
-              ) : (
-                <>
-                  <View style={styles.googleIconContainer}>
-                    <Text style={styles.googleIcon}>G</Text>
-                  </View>
-                  <Text style={styles.googleButtonText}>Continue with Google</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <View style={styles.dividerTextContainer}>
-                <Text style={styles.dividerText}>or sign in with email</Text>
-              </View>
-              <View style={styles.dividerLine} />
-            </View>
-
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Email</Text>
@@ -224,7 +128,7 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
                   <Ionicons 
                     name="mail" 
                     size={18} 
-                    color={focusedInput === 'email' ? '#8B5CF6' : '#6B7280'} 
+                    color={focusedInput === 'email' ? '#DC2626' : '#6B7280'} 
                   />
                 </View>
                 <TextInput
@@ -236,7 +140,7 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  editable={!isAnyLoading}
+                  editable={!isLoading}
                   onFocus={() => setFocusedInput('email')}
                   onBlur={() => setFocusedInput(null)}
                 />
@@ -251,7 +155,7 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
                   <Ionicons 
                     name="lock-closed" 
                     size={18} 
-                    color={focusedInput === 'password' ? '#8B5CF6' : '#6B7280'} 
+                    color={focusedInput === 'password' ? '#DC2626' : '#6B7280'} 
                   />
                 </View>
                 <TextInput
@@ -261,7 +165,7 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
                   placeholder="Enter your password"
                   placeholderTextColor="#6B7280"
                   secureTextEntry={!showPassword}
-                  editable={!isAnyLoading}
+                  editable={!isLoading}
                   onFocus={() => setFocusedInput('password')}
                   onBlur={() => setFocusedInput(null)}
                 />
@@ -283,7 +187,7 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
               <TouchableOpacity
                 style={styles.forgotPasswordButton}
                 onPress={onSwitchToForgotPassword}
-                disabled={isAnyLoading}
+                disabled={isLoading}
               >
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
@@ -291,41 +195,34 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
 
             {/* Login Button */}
             <TouchableOpacity
-              style={[styles.loginButton, isAnyLoading && styles.disabledButton]}
+              style={[styles.loginButton, isLoading && styles.disabledButton]}
               onPress={handleLogin}
-              disabled={isAnyLoading}
+              disabled={isLoading}
               activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={isAnyLoading ? ['#6B7280', '#4B5563'] : ['#8B5CF6', '#7C3AED', '#6D28D9']}
-                style={styles.buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.loginButtonText}>Sign In</Text>
-                    <View style={styles.buttonArrow}>
-                      <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-                    </View>
-                  </>
-                )}
-              </LinearGradient>
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.loginButtonText}>Sign In</Text>
+                  <View style={styles.buttonArrow}>
+                    <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                  </View>
+                </>
+              )}
             </TouchableOpacity>
 
             {/* Footer */}
             <View style={styles.footer}>
-              <Text style={styles.footerText}>New to Habit X?</Text>
+              <Text style={styles.footerText}>New to HabitX?</Text>
               <TouchableOpacity 
                 onPress={onSwitchToRegister} 
-                disabled={isAnyLoading}
+                disabled={isLoading}
                 style={styles.linkButton}
                 activeOpacity={0.7}
               >
                 <Text style={styles.linkText}>Create Account</Text>
-                <Ionicons name="arrow-forward" size={14} color="#8B5CF6" />
+                <Ionicons name="arrow-forward" size={14} color="#DC2626" />
               </TouchableOpacity>
             </View>
           </View>
@@ -338,6 +235,10 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
   },
   scrollContent: {
     flexGrow: 1,
@@ -352,34 +253,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  brandTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
   },
   brandText: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 4,
   },
-  brandXContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginLeft: 4,
-  },
   brandX: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#DC2626',
   },
   card: {
-    backgroundColor: 'rgba(31, 41, 55, 0.95)',
-    borderRadius: 28,
+    backgroundColor: '#141414',
+    borderRadius: 24,
     padding: 28,
     marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.8)',
+    borderColor: '#1F1F1F',
   },
   header: {
     alignItems: 'center',
@@ -388,7 +282,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#F9FAFB',
+    color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -400,42 +294,6 @@ const styles = StyleSheet.create({
   },
   form: {
     width: '100%',
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  googleIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  googleIcon: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#4285F4',
-  },
-  googleButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
   },
   inputContainer: {
     marginBottom: 16,
@@ -450,15 +308,15 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(55, 65, 81, 0.6)',
+    backgroundColor: '#1A1A1A',
     borderWidth: 2,
-    borderColor: 'rgba(75, 85, 99, 0.6)',
+    borderColor: '#2A2A2A',
     borderRadius: 16,
     paddingHorizontal: 4,
   },
   inputWrapperFocused: {
-    borderColor: '#8B5CF6',
-    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+    borderColor: '#DC2626',
+    backgroundColor: 'rgba(220, 38, 38, 0.05)',
   },
   inputIconContainer: {
     width: 44,
@@ -469,7 +327,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#F9FAFB',
+    color: '#FFFFFF',
     paddingVertical: 14,
   },
   eyeButton: {
@@ -485,20 +343,14 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#A78BFA',
+    color: '#DC2626',
     fontWeight: '600',
   },
   loginButton: {
     marginBottom: 20,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  buttonGradient: {
+    backgroundColor: '#DC2626',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -523,24 +375,6 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(75, 85, 99, 0.6)',
-  },
-  dividerTextContainer: {
-    paddingHorizontal: 16,
-  },
-  dividerText: {
-    fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -562,6 +396,6 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#A78BFA',
+    color: '#DC2626',
   },
 });

@@ -4,123 +4,75 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
   StatusBar,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-
-const { width, height } = Dimensions.get('window');
 
 interface ModernSplashScreenProps {
   onAnimationComplete: () => void;
 }
 
 const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComplete }) => {
-  // Animation values
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const textTranslateY = useRef(new Animated.Value(30)).current;
-  const progressWidth = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
   useEffect(() => {
-    // Text animations
-    const textAnimation = Animated.parallel([
-      Animated.timing(textOpacity, {
+    // Simple fade in
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 500,
         useNativeDriver: true,
       }),
-      Animated.spring(textTranslateY, {
-        toValue: 0,
+      Animated.spring(scaleAnim, {
+        toValue: 1,
         tension: 80,
         friction: 12,
         useNativeDriver: true,
       }),
-    ]);
+    ]).start();
 
-    // Progress bar animation
-    const progressAnimation = Animated.timing(progressWidth, {
-      toValue: 1,
-      duration: 1500,
-      useNativeDriver: false,
-    });
-
-    // Execute all animations
-    textAnimation.start();
-    progressAnimation.start();
-
-    // Complete splash screen
-    setTimeout(() => {
+    // Complete after delay
+    const timer = setTimeout(() => {
       onAnimationComplete();
-    }, 2000);
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, []);
-
-
-
-  const progressInterpolation = progressWidth.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
-      {/* Clean gradient background */}
-      <LinearGradient
-        colors={['#667eea', '#764ba2', '#f093fb']}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
+      {/* Dark background */}
+      <View style={styles.background} />
 
-      {/* Main content */}
-      <View style={styles.content}>
-        {/* Text content */}
-        <Animated.View
-          style={[
-            styles.textContainer,
-            {
-              opacity: textOpacity,
-              transform: [{ translateY: textTranslateY }],
-            },
-          ]}
-        >
-          <View style={styles.brandContainer}>
-            <Text style={styles.title}>HABIT</Text>
-            <LinearGradient
-              colors={['#8B5CF6', '#06B6D4']}
-              style={styles.xContainer}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.titleX}>X</Text>
-            </LinearGradient>
-          </View>
-          <Text style={styles.subtitle}>Transform your life, one habit at a time</Text>
-        </Animated.View>
+      {/* Content */}
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        {/* Logo */}
+        <Image 
+          source={require('../assets/images/logo-minimal.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-        {/* Progress bar */}
-        <Animated.View
-          style={[
-            styles.progressContainer,
-            {
-              opacity: textOpacity,
-            },
-          ]}
-        >
-          <View style={styles.progressBar}>
-            <Animated.View
-              style={[
-                styles.progressFill,
-                {
-                  width: progressInterpolation,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.loadingText}>Loading your journey...</Text>
-        </Animated.View>
-      </View>
+        {/* Brand */}
+        <Text style={styles.title}>HABIT<Text style={styles.titleX}>X</Text></Text>
+
+        <Text style={styles.subtitle}>Build Better Habits</Text>
+
+        {/* Loading indicator */}
+        <ActivityIndicator size="small" color="#DC2626" style={styles.loader} />
+      </Animated.View>
     </View>
   );
 };
@@ -131,79 +83,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gradient: {
+  background: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
+    backgroundColor: '#0A0A0A',
   },
   content: {
     alignItems: 'center',
-    zIndex: 1,
   },
-  textContainer: {
-    alignItems: 'center',
-    marginBottom: 60,
-  },
-  brandContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  xContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginLeft: 6,
-  },
-  titleX: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: 2,
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 24,
   },
   title: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#ffffff',
-    textAlign: 'center',
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFFFFF',
     letterSpacing: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 6,
+    marginBottom: 12,
+  },
+  titleX: {
+    color: '#DC2626',
   },
   subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    fontWeight: '300',
-    letterSpacing: 0.5,
-    lineHeight: 22,
-    paddingHorizontal: 20,
-  },
-  progressContainer: {
-    alignItems: 'center',
-    width: 250,
-  },
-  progressBar: {
-    width: '100%',
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 2,
-  },
-  loadingText: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '400',
-    letterSpacing: 0.5,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  loader: {
+    marginTop: 8,
   },
 });
 

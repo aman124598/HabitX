@@ -3,14 +3,14 @@
     "name": "Habit X",
     "slug": "habitx",
     "scheme": "habitx",
-    "version": "1.0.2",
+    "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/logo-minimal.png",
     "splash": {
       "image": "./assets/images/logo-minimal.png",
       "resizeMode": "contain",
-      "backgroundColor": "#8B5CF6"
+      "backgroundColor": "#0A0A0A"
     },
     "assetBundlePatterns": [
       "assets/images/*"
@@ -25,7 +25,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo-minimal.png",
-        "backgroundColor": "#8B5CF6"
+        "backgroundColor": "#0A0A0A"
       },
       "package": "com.aman1298.habitx",
       "versionCode": 3,
