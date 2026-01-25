@@ -59,6 +59,11 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // Allow Expo hosted apps (expo.app, expo.dev)
+    if (origin && (origin.includes('expo.app') || origin.includes('expo.dev'))) {
+      return callback(null, true);
+    }
+    
     // Allow ngrok URLs (they typically have ngrok-free.app domain)
     if (origin && origin.includes('ngrok-free.app')) {
       return callback(null, true);
