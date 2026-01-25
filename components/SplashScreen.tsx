@@ -60,13 +60,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
       >
         {/* Logo */}
         <Image 
-          source={require('../assets/images/logo-minimal.png')} 
           style={styles.logo}
           resizeMode="contain"
         />
 
         {/* Title */}
-        <Text style={styles.title}>HABIT<Text style={styles.titleX}>X</Text></Text>
+        <Text style={styles.titleX}>H</Text>
 
         {/* Subtitle */}
         <Text style={styles.subtitle}>Build Better Habits</Text>
@@ -108,7 +107,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   titleX: {
+    fontSize: 72,
+    fontWeight: "800",
     color: "#DC2626",
+    letterSpacing: 4,
+    marginBottom: 12,
   },
   subtitle: {
     fontSize: 14,

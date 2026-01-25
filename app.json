@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Habit X",
+    "name": "Habit H",
     "slug": "habitx",
     "scheme": "habitx",
     "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/images/logo-minimal.png",
+    "icon": "./assets/images/app-icon.png",
     "splash": {
-      "image": "./assets/images/logo-minimal.png",
+      "image": "./assets/images/app-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0A0A0A"
     },
@@ -24,7 +24,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo-minimal.png",
+        "foregroundImage": "./assets/images/app-icon.png",
         "backgroundColor": "#0A0A0A"
       },
       "package": "com.aman1298.habitx",

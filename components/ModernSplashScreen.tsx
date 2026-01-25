@@ -60,7 +60,7 @@ const ModernSplashScreen: React.FC<ModernSplashScreenProps> = ({ onAnimationComp
       >
         {/* Logo */}
         <Image 
-          source={require('../assets/images/logo-minimal.png')} 
+          source={require('../assets/images/app-icon.png')} 
           style={styles.logo}
           resizeMode="contain"
         />

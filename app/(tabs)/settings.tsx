@@ -472,11 +472,11 @@ export default function SettingsTab() {
         {/* App Info */}
         <View style={styles.appInfo}>
           <Image 
-            source={require('../../assets/images/logo-minimal.png')} 
+            source={require('../../assets/images/app-icon.png')} 
             style={styles.logoMini}
             resizeMode="contain"
           />
-          <ThemedText variant="primary" weight="bold" size="lg">HABIT X</ThemedText>
+          <ThemedText variant="primary" weight="bold" size="lg">HABIT H</ThemedText>
           <ThemedText variant="tertiary" size="sm">Version 1.0.1</ThemedText>
         </View>
       </ScrollView>

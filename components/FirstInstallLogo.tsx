@@ -59,13 +59,13 @@ const FirstInstallLogo: React.FC<Props> = ({ onFinish, duration = 2000 }) => {
       >
         {/* Logo */}
         <Image 
-          source={require('../assets/images/logo-minimal.png')} 
+          source={require('../assets/images/app-icon.png')} 
           style={styles.logo}
           resizeMode="contain"
         />
 
         {/* Brand name */}
-        <Text style={styles.title}>HABIT<Text style={styles.titleX}>X</Text></Text>
+        <Text style={styles.titleX}>H</Text>
 
         {/* Tagline */}
         <Text style={styles.tagline}>Build Better Habits</Text>
@@ -104,7 +104,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   titleX: {
+    fontSize: 72,
+    fontWeight: '800',
     color: '#DC2626',
+    letterSpacing: 4,
+    marginBottom: 12,
   },
   tagline: {
     fontSize: 14,

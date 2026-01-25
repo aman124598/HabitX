@@ -16,8 +16,8 @@ const { width } = Dimensions.get('window');
 function AppLogo({ size = 32 }: { size?: number }) {
   return (
     <Image 
-      source={require('../../assets/images/logo-minimal.png')} 
-      style={{ width: size, height: size }}
+      source={require('../../assets/images/app-icon.png')} 
+      style={{ width: size, height: size, borderRadius: 8 }}
       resizeMode="contain"
     />
   );
@@ -354,14 +354,25 @@ function HabitStreakList({ habits }: { habits: Habit[] }) {
 // ============ Main Stats Page ============
 export default function StatsTab() {
   const { colors } = useTheme();
-  const { habits, refresh } = useHabits();
-  const { refresh: refreshXP } = useXP();
+  const { habits, refresh, loading: habitsLoading } = useHabits();
+  const { refresh: refreshXP, loading: xpLoading, totalXP } = useXP();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month'>('week');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Refresh both habits and XP when the tab comes into focus
   useFocusEffect(
     useCallback(() => {
-      refresh();
-      refreshXP();
+      const syncData = async () => {
+        setIsRefreshing(true);
+        try {
+          await Promise.all([refresh(), refreshXP()]);
+        } catch (error) {
+          console.error('Failed to sync stats data:', error);
+        } finally {
+          setIsRefreshing(false);
+        }
+      };
+      syncData();
     }, [refresh, refreshXP])
   );
 

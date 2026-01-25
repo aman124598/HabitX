@@ -108,30 +108,8 @@ export function useHabits() {
       console.log('Completion status check:', { wasCompleted, isNowCompleted, todayStr });
       
       if (!wasCompleted && isNowCompleted) {
-        // Show XP earned toast
-        if (xpData && xpData.earned > 0) {
-          toast.success('⭐ XP Earned!', `+${xpData.earned} XP • Level ${xpData.level}`);
-        } else {
-          toast.success('Habit Completed!', `Great job completing "${oldHabit.name}"!`);
-        }
-        
-        // Check for streak milestones
-        if (updatedHabit.streak === 7 || updatedHabit.streak === 30 || updatedHabit.streak === 100) {
-          let streakTitle = '';
-          if (updatedHabit.streak === 7) streakTitle = '🔥 Week Warrior!';
-          else if (updatedHabit.streak === 30) streakTitle = '👑 Month Master!';
-          else if (updatedHabit.streak === 100) streakTitle = '🏆 Century Champion!';
-          
-          toast.success(streakTitle, `${updatedHabit.streak} day streak!`);
-        }
-        
-        // Check for perfect day
+        // Refresh habits list silently (no toasts)
         const updatedHabits = await habitsService.getHabits();
-        const todayCompleted = updatedHabits.filter(h => h.lastCompletedOn === todayStr).length;
-        if (todayCompleted === updatedHabits.length && updatedHabits.length > 1) {
-          toast.success('🎯 Perfect Day!', `All ${updatedHabits.length} habits completed!`);
-        }
-        
         setHabits(updatedHabits);
       }
     } catch (error: any) {
