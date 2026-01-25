@@ -6,9 +6,9 @@
     "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/images/appicon.png",
+    "icon": "./assets/images/icon.png",
     "splash": {
-      "image": "./assets/images/appicon.png",
+      "image": "./assets/images/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0A0A0A"
     },
@@ -24,7 +24,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/appicon.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#0A0A0A"
       },
       "package": "com.aman1298.habitx",

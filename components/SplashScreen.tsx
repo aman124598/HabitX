@@ -59,7 +59,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish, duration = 2000 }
       >
         {/* App Logo */}
         <Image 
-          source={require('../assets/images/appicon.png')} 
+          source={require('../assets/images/icon.png')} 
           style={styles.logo}
           resizeMode="contain"
         />

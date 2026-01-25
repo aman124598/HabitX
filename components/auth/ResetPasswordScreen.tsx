@@ -125,7 +125,7 @@ export default function ResetPasswordScreen({ onBackToLogin, email: propEmail, r
         {/* Logo Section */}
         <View style={styles.logoContainer}>
           <Image 
-            source={require('../../assets/images/app-icon.png')} 
+            source={require('../../assets/images/icon.png')} 
             style={styles.logo}
             resizeMode="contain"
           />

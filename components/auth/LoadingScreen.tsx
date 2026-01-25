@@ -8,7 +8,7 @@ export default function LoadingScreen() {
       <View style={styles.content}>
         {/* App Logo */}
         <Image 
-          source={require('../../assets/images/app-icon.png')} 
+          source={require('../../assets/images/icon.png')} 
           style={styles.logo}
           resizeMode="contain"
         />

@@ -472,7 +472,7 @@ export default function SettingsTab() {
         {/* App Info */}
         <View style={styles.appInfo}>
           <Image 
-            source={require('../../assets/images/appicon.png')} 
+            source={require('../../assets/images/icon.png')} 
             style={styles.logoMini}
             resizeMode="contain"
           />
