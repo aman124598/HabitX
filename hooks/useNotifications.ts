@@ -65,10 +65,6 @@ export function useNotifications() {
           // Navigate to home screen
           router.push('/(tabs)/home');
           break;
-        case 'leaderboard_change':
-          // Navigate to leaderboard
-          router.push('/GlobalLeaderboard');
-          break;
         case 'streak_motivation':
           // Navigate to home screen to see habits
           router.push('/(tabs)/home');

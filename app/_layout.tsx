@@ -6,15 +6,12 @@ import { installGlobalErrorHandler } from '../lib/installGlobalErrorHandler';
 import { patchNativeEventEmitter } from '../lib/patchNativeEventEmitter';
 import { AuthProvider, useAuth } from "../lib/authContext";
 import { ThemeProvider, useTheme } from "../lib/themeContext";
-import FirstInstallLogo from "../components/FirstInstallLogo";
+import SplashScreen from "../components/SplashScreen";
 import { TutorialProvider, useTutorial } from "../lib/tutorialContext";
-import { FriendsProvider } from "../lib/friendsContext";
 import AuthScreen from "../components/auth/AuthScreen";
 import LoadingScreen from "../components/auth/LoadingScreen";
 import TutorialScreen from "../components/onboarding/TutorialScreen";
 import { NotificationHandler } from "../components/NotificationHandler";
-import { ToastProvider, ToastContainer } from "../components/toast";
-import ToastServiceProvider from "../components/toast/ToastServiceProvider";
 import { useNotifications } from "../hooks/useNotifications";
 
 function RootLayoutNav() {
@@ -26,12 +23,10 @@ function RootLayoutNav() {
   // Initialize notifications when user is authenticated
   useNotifications();
 
-  // While checking initial state, render the LoadingScreen (avoid a blank app)
+  // Show splash screen on app start
   if (showSplash) {
     return (
-      <FirstInstallLogo
-        onFinish={() => setShowSplash(false)}
-      />
+      <SplashScreen onFinish={() => setShowSplash(false)} />
     );
   }
 
@@ -52,81 +47,31 @@ function RootLayoutNav() {
 
   return (
     <NotificationHandler>
-        <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.brand.primary} />
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: colors.brand.primary,
-            },
-            headerTintColor: colors.text.inverse,
-            headerTitleStyle: {
-              fontWeight: Theme.fontWeight.bold as any,
-              fontSize: Theme.fontSize.lg,
-            },
-            headerShadowVisible: false,
-          }}
-        >
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen 
-            name="habit" 
-            options={{ 
-              headerShown: true, 
-              title: "Habit Details",
-              presentation: "modal",
-            }} 
-          />
-          <Stack.Screen 
-            name="ChallengeLeaderboard" 
-            options={{ 
-              headerShown: true, 
-              title: "Leaderboard",
-            }} 
-          />
-          <Stack.Screen 
-            name="ChallengeDetails" 
-            options={{ 
-              headerShown: true, 
-              title: "Challenge Details",
-            }} 
-          />
-          <Stack.Screen 
-            name="GlobalLeaderboard" 
-            options={{ 
-              headerShown: true, 
-              title: "Global Leaderboard",
-            }} 
-          />
-          <Stack.Screen 
-            name="FriendSearch" 
-            options={{ 
-              headerShown: false,
-              presentation: "modal",
-            }} 
-          />
-          <Stack.Screen 
-            name="FriendRequests" 
-            options={{ 
-              headerShown: false,
-              presentation: "modal",
-            }} 
-          />
-          <Stack.Screen 
-            name="FriendNotificationSettings" 
-            options={{ 
-              headerShown: false,
-              presentation: "modal",
-            }} 
-          />
-          <Stack.Screen 
-            name="UserProfile" 
-            options={{ 
-              headerShown: false,
-              presentation: "modal",
-            }} 
-          />
-        </Stack>
-        <ToastContainer position="top" />
+      <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.brand.primary} />
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: colors.brand.primary,
+          },
+          headerTintColor: colors.text.inverse,
+          headerTitleStyle: {
+            fontWeight: Theme.fontWeight.bold as any,
+            fontSize: Theme.fontSize.lg,
+          },
+          headerShadowVisible: false,
+        }}
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="habit" 
+          options={{ 
+            headerShown: true, 
+            title: "Habit Details",
+            presentation: "modal",
+          }} 
+        />
+      </Stack>
     </NotificationHandler>
   );
 }
@@ -148,13 +93,7 @@ export default function RootLayout() {
     <ThemeProvider>
       <AuthProvider>
         <TutorialProvider>
-          <ToastProvider maxToasts={5}>
-            <ToastServiceProvider>
-              <FriendsProvider>
-                <RootLayoutNav />
-              </FriendsProvider>
-            </ToastServiceProvider>
-          </ToastProvider>
+          <RootLayoutNav />
         </TutorialProvider>
       </AuthProvider>
     </ThemeProvider>

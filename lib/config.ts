@@ -88,9 +88,3 @@ export function getConfig() {
 }
 
 export default { API_BASE_URL, getApiUrl, getConfig };
-
-// Feature flags
-// Toggle friend-related UI/actions. Set to false to hide sending/accepting friend requests.
-export const FEATURES = {
-  friendRequests: false,
-};

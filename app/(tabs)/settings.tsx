@@ -476,7 +476,7 @@ export default function SettingsTab() {
             style={styles.logoMini}
             resizeMode="contain"
           />
-          <ThemedText variant="primary" weight="bold" size="lg">HABIT H</ThemedText>
+          <ThemedText variant="primary" weight="bold" size="lg">HABIT X</ThemedText>
           <ThemedText variant="tertiary" size="sm">Version 1.0.1</ThemedText>
         </View>
       </ScrollView>

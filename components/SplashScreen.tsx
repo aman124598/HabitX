@@ -1,28 +1,21 @@
-import React, { useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  StatusBar,
-  ActivityIndicator,
-  Image,
-} from "react-native";
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, StatusBar, Image } from 'react-native';
 
 interface SplashScreenProps {
-  onAnimationComplete: () => void;
+  onFinish: () => void;
+  duration?: number;
 }
 
-const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
+const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish, duration = 2000 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
-    // Simple fade in animation
+    // Fade in animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 500,
+        duration: 600,
         useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
@@ -33,19 +26,25 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
       }),
     ]).start();
 
-    // Complete after delay
+    // Finish after duration
     const timer = setTimeout(() => {
-      onAnimationComplete();
-    }, 1500);
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        onFinish();
+      });
+    }, duration);
 
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="#0A0A0A" translucent />
 
-      {/* Dark background */}
+      {/* Black background */}
       <View style={styles.background} />
 
       {/* Content */}
@@ -58,20 +57,18 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
           },
         ]}
       >
-        {/* Logo */}
+        {/* App Logo */}
         <Image 
+          source={require('../assets/images/app-icon.png')} 
           style={styles.logo}
           resizeMode="contain"
         />
 
-        {/* Title */}
-        <Text style={styles.titleX}>H</Text>
+        {/* Brand Name */}
+        <Text style={styles.brandName}>HABIT</Text>
 
-        {/* Subtitle */}
-        <Text style={styles.subtitle}>Build Better Habits</Text>
-
-        {/* Loading indicator */}
-        <ActivityIndicator size="small" color="#DC2626" style={styles.loader} />
+        {/* Tagline */}
+        <Text style={styles.tagline}>Build Better Habits</Text>
       </Animated.View>
     </View>
   );
@@ -80,11 +77,11 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationComplete }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   background: {
-    position: "absolute",
+    position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
@@ -92,35 +89,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#0A0A0A',
   },
   content: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     marginBottom: 24,
+    borderRadius: 20,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: 4,
+  brandName: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 8,
     marginBottom: 12,
   },
-  titleX: {
-    fontSize: 72,
-    fontWeight: "800",
-    color: "#DC2626",
-    letterSpacing: 4,
-    marginBottom: 12,
-  },
-  subtitle: {
+  tagline: {
     fontSize: 14,
-    color: "#666666",
-    textAlign: "center",
-    marginBottom: 32,
-  },
-  loader: {
-    marginTop: 8,
+    color: '#666666',
+    textAlign: 'center',
+    letterSpacing: 1,
   },
 });
 

@@ -5,24 +5,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import SafeNotifications from './safeNotifications';
 import { authService } from './auth';
-import leaderboardApi from './leaderboardApi';
 
 // Background task names
 const MORNING_REMINDER_TASK = 'morning-reminder-task';
 const EVENING_REMINDER_TASK = 'evening-reminder-task';
-const LEADERBOARD_CHECK_TASK = 'leaderboard-check-task';
 const STREAK_CHECK_TASK = 'streak-check-task';
 
 // Storage keys
 const SETTINGS_KEY = 'notification_settings';
-const LAST_LEADERBOARD_POSITION_KEY = 'last_leaderboard_position';
 const LAST_STREAK_CHECK_KEY = 'last_streak_check';
 
 interface NotificationSettings {
   enabled: boolean;
   morningReminders: boolean;
   eveningReminders: boolean;
-  leaderboardUpdates: boolean;
   streakReminders: boolean;
   motivationalMessages: boolean;
   morningTime: string; // "07:30"
@@ -35,7 +31,6 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   enabled: true,
   morningReminders: true,
   eveningReminders: true,
-  leaderboardUpdates: false, // Disabled by default to reduce errors
   streakReminders: true,
   motivationalMessages: true,
   morningTime: '07:30',
@@ -78,20 +73,6 @@ class EnhancedNotificationService {
         return BackgroundFetch.BackgroundFetchResult.NewData;
       } catch (error) {
         console.error('Evening reminder task error:', error);
-        return BackgroundFetch.BackgroundFetchResult.Failed;
-      }
-    });
-
-    // Leaderboard check task
-    TaskManager.defineTask(LEADERBOARD_CHECK_TASK, async () => {
-      try {
-        await this.loadSettings();
-        if (this.settings.enabled && this.settings.leaderboardUpdates) {
-          await this.checkLeaderboardChanges();
-        }
-        return BackgroundFetch.BackgroundFetchResult.NewData;
-      } catch (error) {
-        console.error('Leaderboard check task error:', error);
         return BackgroundFetch.BackgroundFetchResult.Failed;
       }
     });
@@ -202,14 +183,6 @@ class EnhancedNotificationService {
         return;
       }
 
-      // Register background fetch for periodic checks
-      // Leaderboard check disabled to reduce API calls and errors
-      // await BackgroundFetch.registerTaskAsync(LEADERBOARD_CHECK_TASK, {
-      //   minimumInterval: 15 * 60, // 15 minutes
-      //   stopOnTerminate: false,
-      //   startOnBoot: true,
-      // });
-
       await BackgroundFetch.registerTaskAsync(STREAK_CHECK_TASK, {
         minimumInterval: 30 * 60, // 30 minutes
         stopOnTerminate: false,
@@ -228,7 +201,7 @@ class EnhancedNotificationService {
       const registeredTasks = await TaskManager.getRegisteredTasksAsync();
       
       for (const task of registeredTasks) {
-        if ([MORNING_REMINDER_TASK, EVENING_REMINDER_TASK, LEADERBOARD_CHECK_TASK, STREAK_CHECK_TASK].includes(task.taskName)) {
+        if ([MORNING_REMINDER_TASK, EVENING_REMINDER_TASK, STREAK_CHECK_TASK].includes(task.taskName)) {
           await BackgroundFetch.unregisterTaskAsync(task.taskName);
         }
       }
@@ -297,80 +270,6 @@ class EnhancedNotificationService {
     console.log('Evening reminder sent');
   }
 
-  // Check leaderboard changes - disabled by default to reduce API errors
-  private async checkLeaderboardChanges() {
-    try {
-      if (!authService.isAuthenticated()) {
-        return;
-      }
-      
-      // Skip if leaderboard updates are disabled
-      if (!this.settings.leaderboardUpdates) {
-        return;
-      }
-
-      const currentPosition = await leaderboardApi.getUserPosition();
-      if (!currentPosition || currentPosition.rank === null) {
-        return; // No valid position, skip
-      }
-      
-      const lastPositionStr = await AsyncStorage.getItem(LAST_LEADERBOARD_POSITION_KEY);
-      
-      if (lastPositionStr) {
-        const lastPosition = JSON.parse(lastPositionStr);
-        
-        // Check if position improved
-        if (currentPosition.rank !== null && lastPosition.rank !== null) {
-          if (currentPosition.rank < lastPosition.rank) {
-            const positionsGained = lastPosition.rank - currentPosition.rank;
-            await this.sendLeaderboardNotification('improvement', positionsGained, currentPosition.rank);
-          } else if (currentPosition.rank > lastPosition.rank) {
-            const positionsLost = currentPosition.rank - lastPosition.rank;
-            await this.sendLeaderboardNotification('decline', positionsLost, currentPosition.rank);
-          }
-        }
-      }
-
-      // Save current position
-      await AsyncStorage.setItem(LAST_LEADERBOARD_POSITION_KEY, JSON.stringify(currentPosition));
-    } catch (error) {
-      console.error('Failed to check leaderboard changes:', error);
-    }
-  }
-
-  // Send leaderboard notification
-  private async sendLeaderboardNotification(type: 'improvement' | 'decline', positions: number, currentRank: number) {
-    if (this.isQuietHours()) return;
-
-    let title = '';
-    let body = '';
-
-    if (type === 'improvement') {
-      title = '🚀 Leaderboard Update!';
-      body = `Great job! You moved up ${positions} position${positions > 1 ? 's' : ''} to rank #${currentRank}! Keep it up! 💪`;
-    } else {
-      title = '📊 Leaderboard Update';
-      body = `You dropped ${positions} position${positions > 1 ? 's' : ''} to rank #${currentRank}. Time to get back in action! 🔥`;
-    }
-
-    await SafeNotifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        data: { 
-          type: 'leaderboard_change', 
-          changeType: type, 
-          positions, 
-          currentRank 
-        },
-        sound: 'default',
-      },
-      trigger: null,
-    });
-
-    console.log(`Leaderboard ${type} notification sent`);
-  }
-
   // Check streak status
   private async checkStreakStatus() {
     try {
@@ -385,8 +284,7 @@ class EnhancedNotificationService {
         }
       }
 
-      // This would need to be implemented with actual habit data
-      // For now, we'll send motivational streak reminders
+      // Send motivational streak reminders
       await this.sendStreakMotivation();
       
       await AsyncStorage.setItem(LAST_STREAK_CHECK_KEY, now.toISOString());
@@ -522,14 +420,11 @@ class EnhancedNotificationService {
   handleNotificationResponse(response: Notifications.NotificationResponse) {
     const data = response.notification.request.content.data;
     
-    // You can add navigation logic here based on notification type
+    // Navigation logic based on notification type
     switch (data.type) {
       case 'morning_reminder':
       case 'evening_reminder':
         // Navigate to home screen
-        break;
-      case 'leaderboard_change':
-        // Navigate to leaderboard
         break;
       case 'streak_motivation':
         // Navigate to habit details or stats

@@ -248,19 +248,6 @@ const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProps> = ({
               </SettingRow>
 
               <SettingRow
-                title="Leaderboard Updates"
-                subtitle="Get notified when your rank changes"
-                icon="trophy"
-              >
-                <Switch
-                  value={settings.leaderboardUpdates}
-                  onValueChange={(value) => updateSetting('leaderboardUpdates', value)}
-                  trackColor={{ false: colors.border.light, true: colors.brand.primary + '40' }}
-                  thumbColor={settings.leaderboardUpdates ? colors.brand.primary : colors.text.secondary}
-                />
-              </SettingRow>
-
-              <SettingRow
                 title="Streak Reminders"
                 subtitle="Stay motivated to maintain streaks"
                 icon="flame"

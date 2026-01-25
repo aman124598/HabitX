@@ -4,13 +4,11 @@ import habitsService, { Habit, CreateHabitData } from '../lib/habitsApi';
 import { notificationService } from '../lib/notificationService';
 import { useAuth } from '../lib/authContext';
 import { getToday } from '../lib/dateHelper';
-import { useToast } from '../lib/toastContext';
 
 export function useHabits() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const { isAuthenticated } = useAuth();
-  const toast = useToast();
 
   const refresh = useCallback(async () => {
     if (!isAuthenticated) {
@@ -25,7 +23,6 @@ export function useHabits() {
       setHabits(list);
     } catch (error) {
       console.error('Failed to refresh habits:', error);
-      toast.error('Error', 'Failed to load habits');
     } finally {
       setLoading(false);
     }
@@ -46,20 +43,11 @@ export function useHabits() {
       }
 
       const habit = await habitsService.createHabit(habitData);
-      setHabits(prev => {
-        const newHabits = [...prev, habit];
-        
-        if (prev.length === 0) {
-          toast.success('🎉 Welcome!', 'Your first habit has been created!');
-        }
-        
-        return newHabits;
-      });
+      setHabits(prev => [...prev, habit]);
       
       return habit;
     } catch (error: any) {
       console.error('Failed to add habit:', error);
-      toast.error('Error', error.message || 'Failed to create habit');
       throw error;
     }
   }, []);
@@ -78,7 +66,6 @@ export function useHabits() {
       const oldHabit = habits.find(h => h.id === id);
       if (!oldHabit) {
         console.error('Habit not found in state:', id);
-        toast.error('Error', 'Habit not found');
         return;
       }
       
@@ -108,15 +95,13 @@ export function useHabits() {
       console.log('Completion status check:', { wasCompleted, isNowCompleted, todayStr });
       
       if (!wasCompleted && isNowCompleted) {
-        // Refresh habits list silently (no toasts)
+        // Refresh habits list silently
         const updatedHabits = await habitsService.getHabits();
         setHabits(updatedHabits);
       }
     } catch (error: any) {
       console.error('Failed to toggle habit:', error);
       console.error('Error details:', error.response?.data || error.message);
-      
-      toast.error('Error', error.message || 'Failed to update habit');
       
       // Refresh from server to get correct state
       refresh();
@@ -128,7 +113,7 @@ export function useHabits() {
         return newSet;
       });
     }
-  }, [habits, refresh, togglingHabits, toast]);
+  }, [habits, refresh, togglingHabits]);
 
   const confirmDelete = useCallback((id: string) => {
     Alert.alert('Delete Habit', 'Are you sure you want to delete this habit?', [
@@ -142,7 +127,6 @@ export function useHabits() {
             setHabits(prev => prev.filter(h => h.id !== id));
           } catch (error: any) {
             console.error('Failed to delete habit:', error);
-            toast.error('Error', error.message || 'Failed to delete habit');
           }
         }
       },
@@ -156,7 +140,6 @@ export function useHabits() {
       return updatedHabit;
     } catch (error: any) {
       console.error('Failed to update habit:', error);
-      toast.error('Error', error.message || 'Failed to update habit');
       throw error;
     }
   }, []);
@@ -167,7 +150,6 @@ export function useHabits() {
       setHabits([]);
     } catch (error: any) {
       console.error('Failed to clear all habits:', error);
-      toast.error('Error', error.message || 'Failed to clear all habits');
       throw error;
     }
   }, []);

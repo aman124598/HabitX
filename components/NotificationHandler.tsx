@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
-import { friendNotificationService } from '../lib/friendNotificationService';
 import { notificationService } from '../lib/notificationService';
 import SafeNotifications from '../lib/safeNotifications';
 
@@ -16,7 +15,6 @@ export function NotificationHandler({ children }: NotificationHandlerProps) {
 
   useEffect(() => {
     // Initialize notification services
-    friendNotificationService.initializeService();
     notificationService.initializeDailyNotifications();
 
     // Listen for notifications received while app is open
@@ -33,18 +31,8 @@ export function NotificationHandler({ children }: NotificationHandlerProps) {
         console.log('Notification response:', response);
         
         const data = response.notification.request.content.data;
-        
-        // Handle friend notifications
-        if (data.category === 'friend') {
-          const result = await friendNotificationService.handleNotificationResponse(response);
-          if (result && typeof result === 'object' && result.route) {
-            // Navigate to the appropriate screen
-            router.push(result.route as any);
-          }
-          return;
-        }
 
-        // Handle other types of notifications
+        // Handle notification types
         switch (data.type) {
           case 'morning_reminder':
           case 'evening_reminder':
@@ -58,9 +46,6 @@ export function NotificationHandler({ children }: NotificationHandlerProps) {
           case 'streak_milestone':
           case 'perfect_day':
             router.push('/(tabs)/');
-            break;
-          case 'leaderboard_change':
-            router.push('/GlobalLeaderboard');
             break;
           default:
             // Default to home screen
