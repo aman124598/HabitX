@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Habit H",
+    "name": "Habit X",
     "slug": "habitx",
     "scheme": "habitx",
     "version": "1.0.1",
@@ -8,9 +8,9 @@
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/icon.png",
     "splash": {
-      "image": "./assets/images/icon.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0A0A0A"
+      "backgroundColor": "#DC2626"
     },
     "assetBundlePatterns": [
       "assets/images/*"
@@ -24,8 +24,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#0A0A0A"
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#DC2626"
       },
       "package": "com.aman1298.habitx",
       "versionCode": 3,
@@ -37,6 +37,7 @@
       ]
     },
     "web": {
+      "favicon": "./assets/images/favicon.png",
       "bundler": "metro",
       "output": "static"
     },
