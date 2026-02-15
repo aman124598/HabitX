@@ -33,7 +33,15 @@
         "NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK",
+        "NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK"
       ]
     },
     "web": {
@@ -79,6 +87,9 @@
         "projectId": "10666677-8609-4d7e-bd5e-117c5a4eabea"
       }
     },
-    "owner": "amanzzz"
+    "owner": "amanzzz",
+    "updates": {
+      "url": "https://u.expo.dev/10666677-8609-4d7e-bd5e-117c5a4eabea"
+    }
   }
 }
