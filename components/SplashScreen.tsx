@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, StatusBar, Image } from 'react-native';
+import { View, Text, StyleSheet, Animated, StatusBar } from 'react-native';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -57,18 +57,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish, duration = 2000 }
           },
         ]}
       >
-        {/* App Logo */}
-        <Image 
-          source={require('../assets/images/icon.png')} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
-
         {/* Brand Name */}
-        <Text style={styles.brandName}>HABIT</Text>
-
-        {/* Tagline */}
-        <Text style={styles.tagline}>Build Better Habits</Text>
+        <Text style={styles.brandName}>HabitX</Text>
       </Animated.View>
     </View>
   );
@@ -91,25 +81,13 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
   },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 24,
-    borderRadius: 20,
-  },
   brandName: {
-    fontSize: 36,
+    fontSize: 44,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 8,
-    marginBottom: 12,
-  },
-  tagline: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
     letterSpacing: 1,
   },
 });
 
 export default SplashScreen;
+

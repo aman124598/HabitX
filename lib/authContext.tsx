@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import authService, { User, LoginCredentials, RegisterCredentials, UpdateProfileCredentials } from './auth';
-import { signOut as firebaseSignOut } from './firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -37,15 +36,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const hasStoredAuth = await authService.init();
       
       if (hasStoredAuth) {
+        const cachedUser = authService.getCurrentUser();
+        if (cachedUser) {
+          setUser(cachedUser);
+        }
+
         // Try to refresh user data from server
         try {
           const userData = await authService.getMe();
-          setUser(userData);
-        } catch (error) {
-          // If token is invalid, clear stored auth
-          console.log('Token expired or invalid, clearing auth');
-          await authService.logout();
-          setUser(null);
+          if (userData) {
+            setUser(userData);
+          }
+        } catch (error: any) {
+          if (error?.status === 401) {
+            // Token is invalid, clear stored auth
+            console.log('Token expired or invalid, clearing auth');
+            await authService.logout();
+            setUser(null);
+          } else {
+            // Keep cached user when refresh fails for non-auth reasons (e.g. network).
+            console.log('Could not refresh auth user, keeping cached session');
+          }
         }
       }
     } catch (error) {
@@ -93,18 +104,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async () => {
     try {
       setIsLoading(true);
-      // Logout on backend/local storage
-      await authService.logout();
-      // Also sign out from Firebase client to clear session
-      try {
-        await firebaseSignOut();
-      } catch (e) {
-        // ignore firebase sign-out errors
-      }
+      // Clear UI state immediately, then run async cleanup.
       setUser(null);
+      await authService.logout();
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails, clear local state
+      // Local state is already cleared.
       setUser(null);
     } finally {
       setIsLoading(false);

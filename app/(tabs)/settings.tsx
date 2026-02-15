@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { View, ScrollView, StyleSheet, Pressable, Alert, Switch, TextInput, Modal, Image } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, Alert, Switch, TextInput, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
@@ -441,7 +441,16 @@ export default function SettingsTab() {
             onPress={() => {
               Alert.alert('Sign Out', 'Are you sure?', [
                 { text: 'Cancel' },
-                { text: 'Sign Out', onPress: logout }
+                {
+                  text: 'Sign Out',
+                  onPress: async () => {
+                    try {
+                      await logout();
+                    } catch (error) {
+                      Alert.alert('Sign Out Failed', 'Please try again.');
+                    }
+                  }
+                }
               ]);
             }}
           />
@@ -471,11 +480,6 @@ export default function SettingsTab() {
 
         {/* App Info */}
         <View style={styles.appInfo}>
-          <Image 
-            source={require('../../assets/images/icon.png')} 
-            style={styles.logoMini}
-            resizeMode="contain"
-          />
           <ThemedText variant="primary" weight="bold" size="lg">HABIT X</ThemedText>
           <ThemedText variant="tertiary" size="sm">Version 1.0.1</ThemedText>
         </View>
@@ -659,11 +663,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 32,
     gap: 8,
-  },
-  logoMini: {
-    width: 48,
-    height: 48,
-    marginBottom: 8,
   },
   loadingOverlay: {
     flex: 1,

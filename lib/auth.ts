@@ -291,21 +291,23 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
+    // Always clear in-memory auth first so UI can switch immediately.
+    this.token = null;
+    this.user = null;
+
     try {
-      await AsyncStorage.removeItem(TOKEN_KEY);
-      await AsyncStorage.removeItem(USER_KEY);
-      this.token = null;
-      this.user = null;
-      // Also sign out Firebase client if present
-      try {
-        const { signOut } = await import('./firebase');
-        await signOut();
-      } catch (e) {
-        // ignore if firebase client not available
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
+      await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY, 'pending_registration']);
+    } catch (storageError) {
+      // Best-effort cleanup; keep going so Firebase session is also cleared.
+      console.error('Logout storage cleanup error:', storageError);
+    }
+
+    try {
+      const { signOut } = await import('./firebase');
+      await signOut();
+    } catch (firebaseError) {
+      // Best-effort cleanup; local auth has already been cleared.
+      console.error('Logout Firebase sign-out error:', firebaseError);
     }
   }
 
@@ -328,8 +330,13 @@ class AuthService {
         if (response.status === 401) {
           // Token is invalid, logout
           await this.logout();
+          const unauthorizedError: any = new Error('Session expired. Please log in again.');
+          unauthorizedError.status = 401;
+          throw unauthorizedError;
         }
-        throw new Error('Failed to get user data');
+        const requestError: any = new Error(`Failed to get user data (HTTP ${response.status})`);
+        requestError.status = response.status;
+        throw requestError;
       }
 
       const data = await response.json();
