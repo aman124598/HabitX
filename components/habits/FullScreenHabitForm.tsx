@@ -1,52 +1,35 @@
 import React from 'react';
-import { Modal, View, StyleSheet, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import { Modal, View, StyleSheet, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import HabitForm, { HabitFormProps } from './HabitForm';
-import { ThemedText } from '../Themed';
-import { Ionicons } from '@expo/vector-icons';
-import Theme from '../../lib/theme';
 import { useTheme } from '../../lib/themeContext';
+import Theme from '../../lib/theme';
 
 type FullScreenHabitFormProps = HabitFormProps & {
   visible: boolean;
 };
 
 export default function FullScreenHabitForm({ visible, onCancel, onSubmit }: FullScreenHabitFormProps) {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onCancel}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.4)' }]}>
+        <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          {/* Close on background tap */}
+          <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
+
           <View style={[
-            styles.card, 
-            { 
-              backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-            }
+            styles.card,
+            { backgroundColor: isDark ? '#121212' : '#FFFFFF' }
           ]}>
-            {/* Header */}
-            <View style={[styles.headerRow, { borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
-              <View style={styles.headerLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: `${colors.brand.primary}15` }]}>
-                  <Ionicons name="add-circle" size={24} color={colors.brand.primary} />
-                </View>
-                <View>
-                  <ThemedText variant="primary" size="xl" weight="bold">New Habit</ThemedText>
-                  <ThemedText variant="secondary" size="sm">Build a new positive routine</ThemedText>
-                </View>
-              </View>
-              <Pressable 
-                onPress={onCancel} 
-                style={[styles.closeButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
-              >
-                <Ionicons name="close" size={20} color={colors.text.secondary} />
-              </Pressable>
+            {/* Minimal drag handle */}
+            <View style={styles.dragHandleContainer}>
+              <View style={[styles.dragHandle, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }]} />
             </View>
 
-            {/* Form Content */}
             <View style={styles.formContainer}>
               <HabitForm onCancel={onCancel} onSubmit={onSubmit} inline hideTitle />
             </View>
@@ -63,47 +46,31 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Theme.spacing.lg,
+    justifyContent: 'flex-end',
   },
   card: {
     width: '100%',
-    maxWidth: 480,
-    maxHeight: '90%',
-    borderRadius: Theme.borderRadius.xxl,
-    borderWidth: 1,
+    height: '80%', // Bottom sheet style instead of floating card
+    borderTopLeftRadius: Theme.borderRadius.xxl,
+    borderTopRightRadius: Theme.borderRadius.xxl,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 20,
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  dragHandleContainer: {
+    width: '100%',
     alignItems: 'center',
-    padding: Theme.spacing.lg,
-    paddingBottom: Theme.spacing.md,
-    borderBottomWidth: 1,
+    paddingVertical: 12,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Theme.spacing.md,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
   },
   formContainer: {
-    padding: Theme.spacing.lg,
-    paddingTop: Theme.spacing.md,
+    flex: 1,
   },
 });

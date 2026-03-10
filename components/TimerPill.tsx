@@ -43,8 +43,8 @@ export default function TimerPill() {
 
     // Pulse animation for the recording dot
     const dotOpacity = useSharedValue(1);
-    // Slide-in animation
-    const translateY = useSharedValue(-60);
+    // Slide-in animation from bottom
+    const translateY = useSharedValue(120);
 
     // Poll for running timers every second
     useEffect(() => {
@@ -106,7 +106,7 @@ export default function TimerPill() {
                 true,
             );
         } else {
-            translateY.value = withTiming(-60, { duration: 200 });
+            translateY.value = withTiming(120, { duration: 200 });
         }
     }, [runningHabitId]);
 
@@ -118,7 +118,7 @@ export default function TimerPill() {
         opacity: dotOpacity.value,
     }));
 
-    if (!runningHabitId && translateY.value <= -59) return null;
+    if (!runningHabitId && translateY.value >= 119) return null;
 
     return (
         <Animated.View
@@ -166,7 +166,7 @@ export default function TimerPill() {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 54 : 36,
+        bottom: Platform.OS === 'ios' ? 100 : 80,
         alignSelf: 'center',
         flexDirection: 'row',
         alignItems: 'center',

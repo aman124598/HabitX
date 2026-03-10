@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
-import { ThemedCard, ThemedText, ThemedButton } from '../Themed';
+import { ThemedText } from '../Themed';
 import { useTheme } from '../../lib/themeContext';
 import Theme from '../../lib/theme';
 import { CreateHabitData, CustomFrequency } from '../../lib/habitsApi';
@@ -16,7 +16,6 @@ export type HabitFormProps = {
 
 const categoryOptions = CATEGORIES;
 const frequencies = FREQUENCIES;
-const customFrequencyTypes = CUSTOM_FREQUENCY_TYPES;
 
 export default function HabitForm({ onCancel, onSubmit, inline = false, hideTitle = false }: HabitFormProps) {
   const { colors, isDark } = useTheme();
@@ -28,11 +27,7 @@ export default function HabitForm({ onCancel, onSubmit, inline = false, hideTitl
     category: 'Health',
     startDate: new Date().toISOString().split('T')[0],
   });
-  const [customFrequency, setCustomFrequency] = useState<CustomFrequency>({
-    type: 'times_per_week',
-    value: 3,
-  });
-  
+
   const handleSubmit = () => {
     if (formData.name.trim()) {
       const submitData = {
@@ -41,131 +36,115 @@ export default function HabitForm({ onCancel, onSubmit, inline = false, hideTitl
         description: formData.description?.trim() || '',
         goal: formData.goal?.trim() || '',
       };
-
-      if (formData.frequency === 'custom') {
-        submitData.customFrequency = customFrequency;
-      }
-
       onSubmit(submitData);
     }
   };
 
-  const isFormValid = formData.name.trim() && formData.category && formData.startDate;
-
-  const inputStyle = {
-    borderWidth: 1,
-    borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-    color: colors.text.primary,
-    fontSize: 16,
-  };
-
-  const labelStyle = {
-    marginBottom: 8,
-    color: colors.text.secondary,
-  };
+  const isFormValid = formData.name.trim() && formData.category;
 
   const content = (
-    <>
-      {!hideTitle && (
-        <ThemedText variant="primary" size="xl" weight="bold" style={{ marginBottom: 20 }}>
-          Create New Habit
-        </ThemedText>
-      )}
-      
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
-        style={{ maxHeight: 400 }}
-        contentContainerStyle={{ paddingBottom: 8 }}
+    <View style={styles.wrapper}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
       >
-        {/* Habit Name */}
-        <View style={styles.field}>
-          <ThemedText variant="secondary" size="sm" weight="semibold" style={labelStyle}>
-            Habit Name
-          </ThemedText>
-          <TextInput
-            style={inputStyle}
-            placeholder="What habit do you want to build?"
-            placeholderTextColor={colors.text.tertiary}
-            value={formData.name}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-            autoFocus
-            returnKeyType="next"
-          />
-        </View>
+        {/* Habit Name - Large and Clean */}
+        <TextInput
+          style={[
+            styles.titleInput,
+            { color: colors.text.primary }
+          ]}
+          placeholder="Habit Name"
+          placeholderTextColor={colors.text.tertiary}
+          value={formData.name}
+          onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+          autoFocus
+          returnKeyType="next"
+        />
 
-        {/* Category - Visual Grid */}
-        <View style={styles.field}>
-          <ThemedText variant="secondary" size="sm" weight="semibold" style={labelStyle}>
+        {/* Goal */}
+        <TextInput
+          style={[
+            styles.goalInput,
+            { color: colors.text.secondary }
+          ]}
+          placeholder="Goal (e.g. 10 mins, 5 pages) - Optional"
+          placeholderTextColor={colors.text.tertiary}
+          value={formData.goal}
+          onChangeText={(text) => setFormData(prev => ({ ...prev, goal: text }))}
+          returnKeyType="done"
+        />
+
+        {/* Category - Scrolling Pills */}
+        <View style={styles.section}>
+          <ThemedText variant="secondary" size="sm" weight="semibold" style={styles.sectionLabel}>
             Category
           </ThemedText>
-          <View style={styles.categoryGrid}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
             {categoryOptions.map((opt) => {
               const isSelected = formData.category === opt.value;
               return (
                 <Pressable
                   key={opt.value}
                   style={[
-                    styles.categoryChip,
-                    { 
-                      backgroundColor: isSelected 
-                        ? colors.brand.primary 
-                        : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                      borderColor: isSelected 
-                        ? colors.brand.primary 
-                        : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                    styles.chip,
+                    {
+                      backgroundColor: isSelected
+                        ? colors.brand.primary
+                        : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
                     }
                   ]}
                   onPress={() => setFormData(prev => ({ ...prev, category: opt.value }))}
                 >
-                  <Ionicons 
-                    name={opt.icon as any} 
-                    size={18} 
-                    color={isSelected ? '#FFFFFF' : opt.color} 
+                  <Ionicons
+                    name={opt.icon as any}
+                    size={16}
+                    color={isSelected ? '#FFFFFF' : opt.color}
                   />
                   <ThemedText
                     size="sm"
-                    weight="medium"
-                    style={{ color: isSelected ? '#FFFFFF' : colors.text.primary, marginLeft: 6 }}
+                    weight={isSelected ? 'semibold' : 'medium'}
+                    style={{ color: isSelected ? '#FFFFFF' : colors.text.secondary, marginLeft: 6 }}
                   >
                     {opt.label}
                   </ThemedText>
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
         </View>
 
-        {/* Frequency - Clean Segmented */}
-        <View style={styles.field}>
-          <ThemedText variant="secondary" size="sm" weight="semibold" style={labelStyle}>
-            How often?
+        {/* Frequency */}
+        <View style={styles.section}>
+          <ThemedText variant="secondary" size="sm" weight="semibold" style={styles.sectionLabel}>
+            Frequency
           </ThemedText>
           <View style={[
-            styles.frequencyContainer, 
-            { 
-              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-              borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-            }
+            styles.frequencyContainer,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }
           ]}>
-            {frequencies.map((freq) => {
+            {frequencies.filter(f => f.value !== 'custom').map((freq) => {
               const isSelected = formData.frequency === freq.value;
               return (
                 <Pressable
                   key={freq.value}
                   style={[
                     styles.frequencyButton,
-                    isSelected && { backgroundColor: colors.brand.primary },
+                    isSelected && {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#FFFFFF',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 2,
+                      elevation: 1,
+                    },
                   ]}
                   onPress={() => setFormData(prev => ({ ...prev, frequency: freq.value }))}
                 >
-                  <ThemedText 
-                    size="sm" 
+                  <ThemedText
+                    size="sm"
                     weight={isSelected ? 'semibold' : 'medium'}
-                    style={{ color: isSelected ? '#FFFFFF' : colors.text.primary }}
+                    style={{ color: isSelected ? colors.text.primary : colors.text.tertiary }}
                   >
                     {freq.label}
                   </ThemedText>
@@ -173,136 +152,76 @@ export default function HabitForm({ onCancel, onSubmit, inline = false, hideTitl
               );
             })}
           </View>
-
-          {/* Custom Frequency Options */}
-          {formData.frequency === 'custom' && (
-            <View style={styles.customFrequencyRow}>
-              <TextInput
-                style={[inputStyle, { width: 70, textAlign: 'center' }]}
-                value={String(customFrequency.value)}
-                onChangeText={(text) => {
-                  const v = parseInt(text) || 1;
-                  setCustomFrequency(prev => ({ ...prev, value: Math.max(1, Math.min(365, v)) }));
-                }}
-                keyboardType="numeric"
-              />
-              <View style={styles.customTypeRow}>
-                {customFrequencyTypes.map((t) => {
-                  const isSelected = customFrequency.type === t.value;
-                  return (
-                    <Pressable
-                      key={t.value}
-                      style={[
-                        styles.customTypeButton,
-                        { 
-                          backgroundColor: isSelected 
-                            ? colors.brand.primary 
-                            : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                          borderColor: isSelected 
-                            ? colors.brand.primary 
-                            : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                        }
-                      ]}
-                      onPress={() => setCustomFrequency(prev => ({ ...prev, type: t.value as any }))}
-                    >
-                      <ThemedText 
-                        size="xs" 
-                        weight="medium"
-                        style={{ color: isSelected ? '#FFFFFF' : colors.text.primary }}
-                      >
-                        {t.label}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Goal (Optional) */}
-        <View style={styles.field}>
-          <ThemedText variant="secondary" size="sm" weight="semibold" style={labelStyle}>
-            Goal <ThemedText variant="tertiary" size="xs">(optional)</ThemedText>
-          </ThemedText>
-          <TextInput
-            style={inputStyle}
-            placeholder="e.g. 10 minutes, 20 pages..."
-            placeholderTextColor={colors.text.tertiary}
-            value={formData.goal}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, goal: text }))}
-            returnKeyType="done"
-          />
         </View>
       </ScrollView>
-      
-      {/* Actions */}
-      <View style={styles.actions}>
-        <Pressable 
-          onPress={onCancel} 
-          style={[
-            styles.cancelButton, 
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }
-          ]}
+
+      {/* Footer Actions */}
+      <View style={[styles.actions, { borderTopColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}>
+        <Pressable
+          onPress={onCancel}
+          style={styles.cancelButton}
         >
           <ThemedText variant="secondary" size="base" weight="medium">Cancel</ThemedText>
         </Pressable>
-        <Pressable 
-          onPress={handleSubmit} 
+        <Pressable
+          onPress={handleSubmit}
           disabled={!isFormValid}
           style={[
-            styles.submitButton, 
-            { 
-              backgroundColor: isFormValid ? colors.brand.primary : colors.brand.primary + '40',
-            }
+            styles.submitButton,
+            { backgroundColor: isFormValid ? colors.brand.primary : colors.brand.primary + '40' }
           ]}
         >
-          <Ionicons name="add" size={20} color="#FFFFFF" />
+          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
           <ThemedText style={{ color: '#FFFFFF', marginLeft: 6 }} size="base" weight="semibold">
-            Create Habit
+            Save Habit
           </ThemedText>
         </Pressable>
       </View>
-    </>
+    </View>
   );
 
-  if (inline) {
-    return <View>{content}</View>;
-  }
-
-  return (
-    <ThemedCard variant="elevated" style={styles.container}>
-      {content}
-    </ThemedCard>
-  );
+  return content;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    margin: Theme.spacing.lg,
-    padding: Theme.spacing.lg,
-    borderRadius: Theme.borderRadius.xl,
+  wrapper: {
+    flex: 1,
+    paddingTop: Theme.spacing.lg,
   },
-  field: {
-    marginBottom: 20,
+  titleInput: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    paddingHorizontal: Theme.spacing.xl,
+    marginBottom: Theme.spacing.sm,
   },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  goalInput: {
+    fontSize: 16,
+    paddingHorizontal: Theme.spacing.xl,
+    marginBottom: Theme.spacing.xl,
+  },
+  section: {
+    marginBottom: Theme.spacing.xl,
+  },
+  sectionLabel: {
+    paddingHorizontal: Theme.spacing.xl,
+    marginBottom: Theme.spacing.md,
+    letterSpacing: 0.5,
+  },
+  categoryScroll: {
+    paddingHorizontal: Theme.spacing.xl,
     gap: 8,
   },
-  categoryChip: {
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 20,
   },
   frequencyContainer: {
     flexDirection: 'row',
+    marginHorizontal: Theme.spacing.xl,
     borderRadius: 12,
-    borderWidth: 1,
     padding: 4,
   },
   frequencyButton: {
@@ -312,29 +231,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
   },
-  customFrequencyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    gap: 12,
-  },
-  customTypeRow: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  customTypeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
   actions: {
     flexDirection: 'row',
+    padding: Theme.spacing.lg,
+    paddingHorizontal: Theme.spacing.xl,
+    borderTopWidth: 1,
     gap: 12,
-    marginTop: 8,
-    paddingTop: 16,
   },
   cancelButton: {
     flex: 1,
