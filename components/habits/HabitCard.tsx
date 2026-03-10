@@ -1,18 +1,17 @@
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 import { Habit } from '../../lib/habitsApi';
-import { ThemedCard, ThemedText } from '../Themed';
+import { ThemedText } from '../Themed';
 import { useTheme } from '../../lib/themeContext';
-import Theme, { getShadow } from '../../lib/theme';
-import { getFrequencyDisplay, getCategoryColor, getCategoryIcon } from '../../lib/habitUtils';
+import { getCategoryColor, getCategoryIcon } from '../../lib/habitUtils';
 import { isCompletedToday as checkIsCompletedToday } from '../../lib/dateHelper';
+import { useHabitTimer } from '../../hooks/useHabitTimer';
 
 export type HabitCardProps = {
   habit: Habit;
@@ -24,46 +23,53 @@ function isCompletedToday(habit: Habit): boolean {
   return checkIsCompletedToday(habit.lastCompletedOn);
 }
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 export default function HabitCard({ habit, onToggle, onDelete }: HabitCardProps) {
   const { colors, isDark } = useTheme();
   const completed = isCompletedToday(habit);
   const [isToggling, setIsToggling] = React.useState(false);
-  
-  // Simple animation values
+  const timer = useHabitTimer(habit.id);
+
   const scale = useSharedValue(1);
   const checkScale = useSharedValue(completed ? 1 : 0);
-  const deleteScale = useSharedValue(1);
-  
+
   const categoryColor = getCategoryColor(habit.category);
   const categoryIcon = getCategoryIcon(habit.category);
-  const frequencyDisplay = getFrequencyDisplay(habit.frequency, habit.customFrequency);
 
   React.useEffect(() => {
     checkScale.value = withSpring(completed ? 1 : 0, { damping: 12, stiffness: 300 });
   }, [completed]);
 
+  // Auto-stop timer when habit is completed
+  React.useEffect(() => {
+    if (completed && timer.isRunning) {
+      timer.stop();
+    }
+  }, [completed]);
+
   const handleToggle = React.useCallback(() => {
     if (isToggling) return;
     setIsToggling(true);
-    
-    // Simple press animation
     scale.value = withSpring(0.97, { damping: 15, stiffness: 400 });
     scale.value = withSpring(1, { damping: 12, stiffness: 300 });
-    
     onToggle(habit.id);
-    
     setTimeout(() => setIsToggling(false), 500);
   }, [isToggling, habit.id, onToggle]);
 
-  const handleDeletePressIn = () => {
-    deleteScale.value = withSpring(0.85, { damping: 15, stiffness: 400 });
-  };
+  const handleTimerPress = React.useCallback(() => {
+    if (completed) return;
+    if (timer.isRunning) {
+      timer.stop();
+    } else {
+      timer.start();
+    }
+  }, [completed, timer]);
 
-  const handleDeletePressOut = () => {
-    deleteScale.value = withSpring(1, { damping: 15, stiffness: 300 });
-  };
+  const handleTimerLongPress = React.useCallback(() => {
+    Alert.alert('Reset Timer', 'Reset today\'s timer for this habit?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Reset', style: 'destructive', onPress: () => timer.reset() },
+    ]);
+  }, [timer]);
 
   const cardAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -74,275 +80,180 @@ export default function HabitCard({ habit, onToggle, onDelete }: HabitCardProps)
     opacity: checkScale.value,
   }));
 
-  const deleteAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: deleteScale.value }],
-  }));
+  const streakColor = habit.streak >= 30 ? '#F59E0B' : habit.streak >= 14 ? '#8B5CF6' : habit.streak >= 7 ? '#06B6D4' : '#FB923C';
 
-  // Streak color based on streak length
-  const getStreakColor = () => {
-    if (habit.streak >= 30) return '#F59E0B'; // Gold
-    if (habit.streak >= 14) return '#8B5CF6'; // Purple
-    if (habit.streak >= 7) return '#06B6D4'; // Cyan
-    return colors.status.warning; // Orange default
-  };
+  const timerColor = timer.isRunning
+    ? colors.status.success
+    : completed
+      ? colors.text.tertiary
+      : colors.text.secondary;
 
   return (
     <Animated.View style={[cardAnimatedStyle, styles.container]}>
-      <ThemedCard 
-        variant={completed ? 'elevated' : 'default'}
+      <View
         style={[
           styles.card,
-          completed && { 
-            borderLeftWidth: 4, 
-            borderLeftColor: categoryColor,
+          {
+            backgroundColor: colors.card.background,
+            borderColor: completed ? `${categoryColor}30` : colors.border.light,
           },
+          completed && { opacity: 0.75 },
         ]}
       >
-        <View style={styles.content}>
-          {/* Checkbox */}
+        {/* ─── Row 1: Checkbox + Name + Delete ─── */}
+        <View style={styles.topRow}>
           <Pressable
             onPress={handleToggle}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.checkboxContainer}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <View
               style={[
                 styles.checkbox,
-                completed 
-                  ? [styles.checkboxChecked, { 
-                      borderColor: categoryColor, 
-                      backgroundColor: categoryColor,
-                    }] 
-                  : { 
-                      borderColor: colors.border.medium, 
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-                    },
+                completed
+                  ? { borderColor: categoryColor, backgroundColor: categoryColor }
+                  : { borderColor: colors.border.medium, backgroundColor: 'transparent' },
               ]}
             >
               <Animated.View style={checkAnimatedStyle}>
-                <Ionicons name="checkmark" size={16} color="white" />
+                <Ionicons name="checkmark" size={14} color="#fff" />
               </Animated.View>
             </View>
           </Pressable>
 
-          {/* Habit Info */}
-          <View style={styles.habitInfo}>
-            <View style={styles.nameRow}>
-              <ThemedText 
-                variant={completed ? 'secondary' : 'primary'}
-                size="lg" 
-                weight="bold"
-                numberOfLines={1}
-                style={completed ? styles.completedName : undefined}
-              >
-                {habit.name}
-              </ThemedText>
-              
-              {/* Completion badge */}
-              {completed && (
-                <View style={[styles.completedBadge, { backgroundColor: `${colors.status.success}20` }]}>
-                  <Ionicons name="checkmark-circle" size={12} color={colors.status.success} />
-                  <ThemedText variant="secondary" size="xs" style={{ color: colors.status.success }}>Done</ThemedText>
-                </View>
-              )}
-            </View>
-            
-            {habit.goal && (
-              <ThemedText variant="secondary" size="sm" numberOfLines={1} style={styles.goal}>
-                {habit.goal}
-              </ThemedText>
-            )}
-            
-            {/* Category & Frequency Badges */}
-            <View style={styles.metaRow}>
-              <View style={[styles.categoryBadge, { backgroundColor: `${categoryColor}15` }]}>
-                <Ionicons name={categoryIcon as any} size={12} color={categoryColor} />
-                <ThemedText variant="secondary" size="xs" weight="medium" style={{ color: categoryColor }}>
-                  {habit.category}
-                </ThemedText>
-              </View>
-              <View style={[styles.frequencyBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]}>
-                <Ionicons name="repeat" size={10} color={colors.text.tertiary} />
-                <ThemedText variant="tertiary" size="xs">
-                  {frequencyDisplay}
-                </ThemedText>
-              </View>
-            </View>
+          <View style={styles.nameSection}>
+            <ThemedText
+              variant={completed ? 'secondary' : 'primary'}
+              weight="semibold"
+              size="base"
+              numberOfLines={1}
+              style={completed ? styles.strikethrough : undefined}
+            >
+              {habit.name}
+            </ThemedText>
           </View>
 
-          {/* Right Side - Streak & XP */}
-          <View style={styles.rightSection}>
-            {/* Streak Badge */}
-            {habit.streak > 0 && (
-              <View style={[styles.streakBadge, { backgroundColor: `${getStreakColor()}15` }]}>
-                <View style={styles.streakContent}>
-                  <Ionicons name="flame" size={16} color={getStreakColor()} />
-                  <ThemedText 
-                    weight="bold" 
-                    size="base"
-                    style={{ color: getStreakColor() }}
-                  >
-                    {habit.streak}
-                  </ThemedText>
-                </View>
-                <ThemedText variant="tertiary" size="xs">
-                  {habit.streak === 1 ? 'day' : 'days'}
-                </ThemedText>
-              </View>
-            )}
-            
-            {/* XP Badge */}
-            {(habit.xp || 0) > 0 && (
-              <View style={[styles.xpBadge, { backgroundColor: `${colors.brand.primary}15` }]}>
-                <Ionicons name="star" size={10} color={colors.brand.primary} />
-                <ThemedText variant="accent" size="xs" weight="bold">
-                  +{habit.xp} XP
-                </ThemedText>
-              </View>
-            )}
-          </View>
-
-          {/* Delete Button */}
-          <AnimatedPressable 
+          <Pressable
             onPress={() => onDelete(habit.id)}
-            onPressIn={handleDeletePressIn}
-            onPressOut={handleDeletePressOut}
-            style={[
-              styles.deleteButton,
-              deleteAnimatedStyle,
-              { backgroundColor: isDark ? 'rgba(244, 63, 94, 0.1)' : 'rgba(244, 63, 94, 0.08)' }
-            ]}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.5 }]}
           >
-            <Ionicons name="trash-outline" size={16} color={colors.status.error} />
-          </AnimatedPressable>
+            <Ionicons name="close" size={16} color={colors.text.tertiary} />
+          </Pressable>
         </View>
-      </ThemedCard>
+
+        {/* ─── Row 2: Meta chips ─── */}
+        <View style={styles.bottomRow}>
+          {/* Category */}
+          <View style={[styles.chip, { backgroundColor: `${categoryColor}12` }]}>
+            <Ionicons name={categoryIcon as any} size={11} color={categoryColor} />
+            <ThemedText size="xs" style={{ color: categoryColor }}>
+              {habit.category}
+            </ThemedText>
+          </View>
+
+          {/* Streak */}
+          {habit.streak > 0 && (
+            <View style={[styles.chip, { backgroundColor: `${streakColor}12` }]}>
+              <Ionicons name="flame" size={11} color={streakColor} />
+              <ThemedText size="xs" weight="semibold" style={{ color: streakColor }}>
+                {habit.streak}d
+              </ThemedText>
+            </View>
+          )}
+
+          {/* Timer */}
+          <Pressable
+            onPress={handleTimerPress}
+            onLongPress={handleTimerLongPress}
+            style={[
+              styles.chip,
+              {
+                backgroundColor: timer.isRunning
+                  ? `${colors.status.success}12`
+                  : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+              },
+            ]}
+          >
+            <Ionicons
+              name={timer.isRunning ? 'pause' : 'timer-outline'}
+              size={11}
+              color={timerColor}
+            />
+            <ThemedText
+              size="xs"
+              weight={timer.isRunning ? 'semibold' : 'normal'}
+              style={{ color: timerColor, fontVariant: ['tabular-nums'] }}
+            >
+              {timer.display}
+            </ThemedText>
+          </Pressable>
+
+          {/* XP */}
+          {(habit.xp || 0) > 0 && (
+            <View style={[styles.chip, { backgroundColor: `${colors.brand.primary}10` }]}>
+              <Ionicons name="star" size={10} color={colors.brand.primary} />
+              <ThemedText size="xs" weight="semibold" style={{ color: colors.brand.primary }}>
+                {habit.xp}
+              </ThemedText>
+            </View>
+          )}
+        </View>
+      </View>
     </Animated.View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Theme.spacing.lg,
+    marginBottom: 10,
   },
-  
   card: {
-    position: 'relative',
-    overflow: 'hidden',
-    padding: Theme.spacing.lg,
-    borderRadius: Theme.borderRadius.xl,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  
-  content: {
+
+  // ── Row 1 ──
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 2,
   },
-  
-  checkboxContainer: {
-    marginRight: Theme.spacing.md,
-  },
-  
   checkbox: {
-    width: 32,
-    height: 32,
-    borderRadius: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 8,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
-  checkboxChecked: {
-    // Colors applied inline
-  },
-  
-  habitInfo: {
+  nameSection: {
     flex: 1,
-    marginRight: Theme.spacing.sm,
+    marginHorizontal: 12,
   },
-  
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    gap: 8,
-  },
-  
-  completedName: {
+  strikethrough: {
     textDecorationLine: 'line-through',
-    opacity: 0.6,
+    opacity: 0.5,
+  },
+  deleteBtn: {
+    padding: 4,
   },
 
-  completedBadge: {
+  // ── Row 2 ──
+  bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Theme.borderRadius.full,
-    gap: 3,
-  },
-  
-  goal: {
-    marginBottom: 8,
-    opacity: 0.8,
-  },
-  
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    marginTop: 8,
+    marginLeft: 36, // align with text (24 checkbox + 12 margin)
+    gap: 6,
     flexWrap: 'wrap',
   },
-  
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: Theme.borderRadius.full,
-    gap: 5,
-  },
-
-  frequencyBadge: {
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Theme.borderRadius.full,
+    paddingVertical: 3,
+    borderRadius: 20,
     gap: 4,
-  },
-  
-  rightSection: {
-    alignItems: 'flex-end',
-    marginRight: Theme.spacing.sm,
-    gap: 8,
-  },
-  
-  streakBadge: {
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: Theme.borderRadius.lg,
-  },
-  
-  streakContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  
-  xpBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Theme.borderRadius.full,
-    gap: 4,
-  },
-  
-  deleteButton: {
-    padding: 10,
-    borderRadius: Theme.borderRadius.lg,
   },
 });

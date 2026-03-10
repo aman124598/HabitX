@@ -4,61 +4,74 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import { useTheme } from '../../lib/themeContext';
-import Theme, { getShadow } from '../../lib/theme';
 
 const { width, height } = Dimensions.get('window');
 
-interface TutorialCard {
-  id: number;
+// ─── Slide Data ──────────────────────────────────────────────────
+interface Slide {
   icon: keyof typeof Ionicons.glyphMap;
+  emoji: string;
   title: string;
-  description: string;
-  color: string;
+  subtitle: string;
+  features: { icon: keyof typeof Ionicons.glyphMap; text: string }[];
+  gradient: [string, string, string];
 }
 
-const tutorialCards: TutorialCard[] = [
+const slides: Slide[] = [
   {
-    id: 1,
-    icon: 'add-circle-outline',
-    title: 'Create Habits',
-    description: 'Add custom habits with categories like Health, Work, Learning, or Lifestyle. Set your goals and start tracking!',
-    color: '#3B82F6',
+    icon: 'rocket',
+    emoji: '🚀',
+    title: 'Build Better Habits',
+    subtitle: 'Create, track, and master your daily habits with smart categories and streaks.',
+    features: [
+      { icon: 'add-circle', text: 'Create habits in Health, Work, Learning & Lifestyle' },
+      { icon: 'flame', text: 'Build streaks to stay consistent every day' },
+      { icon: 'trophy', text: 'Earn XP and level up as you progress' },
+    ],
+    gradient: ['#667eea', '#764ba2', '#f093fb'],
   },
   {
-    id: 2,
-    icon: 'checkmark-circle-outline',
-    title: 'Daily Check-ins',
-    description: 'Mark your habits complete each day with a simple tap. Build consistency one day at a time.',
-    color: '#10B981',
+    icon: 'timer',
+    emoji: '⏱️',
+    title: 'Track Your Time',
+    subtitle: 'Built-in timer for each habit so you know exactly how long things take.',
+    features: [
+      { icon: 'play-circle', text: 'One-tap timer on every habit card' },
+      { icon: 'bar-chart', text: '7-day time insights and daily breakdown' },
+      { icon: 'analytics', text: 'See where your time really goes' },
+    ],
+    gradient: ['#11998e', '#38ef7d', '#56ab2f'],
   },
   {
-    id: 3,
-    icon: 'flame-outline',
-    title: 'Build Streaks',
-    description: 'Stay motivated with streaks! Complete habits consistently to build powerful momentum.',
-    color: '#F59E0B',
-  },
-  {
-    id: 4,
-    icon: 'stats-chart-outline',
-    title: 'Track Progress',
-    description: 'View detailed statistics, weekly charts, and insights about your habit completion rates.',
-    color: '#8B5CF6',
-  },
-  {
-    id: 5,
-    icon: 'notifications-outline',
-    title: 'Smart Reminders',
-    description: 'Set up daily reminders so you never forget to complete your habits.',
-    color: '#EC4899',
+    icon: 'stats-chart',
+    emoji: '📊',
+    title: 'Powerful Insights',
+    subtitle: 'Beautiful stats, activity calendar, and progress tracking at a glance.',
+    features: [
+      { icon: 'grid', text: 'GitHub-style activity heatmap' },
+      { icon: 'notifications', text: 'Smart reminders so you never miss a day' },
+      { icon: 'cloud-upload', text: 'Backup & export your data anytime' },
+    ],
+    gradient: ['#fc5c7d', '#6a82fb', '#fc5c7d'],
   },
 ];
+
+// ─── Component ───────────────────────────────────────────────────
 
 interface TutorialScreenProps {
   onComplete: () => void;
@@ -70,44 +83,37 @@ export default function TutorialScreen({ onComplete }: TutorialScreenProps) {
   const { colors, isDark } = useTheme();
 
   const handleNext = () => {
-    if (currentIndex < tutorialCards.length - 1) {
-      const nextIndex = currentIndex + 1;
-      setCurrentIndex(nextIndex);
-      scrollViewRef.current?.scrollTo({
-        x: nextIndex * width,
-        animated: true,
-      });
+    if (currentIndex < slides.length - 1) {
+      const next = currentIndex + 1;
+      setCurrentIndex(next);
+      scrollViewRef.current?.scrollTo({ x: next * width, animated: true });
     } else {
       onComplete();
     }
   };
 
-  const handleSkip = () => {
-    onComplete();
-  };
-
   const handleScroll = (event: any) => {
-    const scrollPosition = event.nativeEvent.contentOffset.x;
-    const index = Math.round(scrollPosition / width);
-    setCurrentIndex(index);
+    const index = Math.round(event.nativeEvent.contentOffset.x / width);
+    if (index >= 0 && index < slides.length) {
+      setCurrentIndex(index);
+    }
   };
 
-  const currentCard = tutorialCards[currentIndex];
+  const slide = slides[currentIndex];
+  const isLast = currentIndex === slides.length - 1;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background.primary }]}>
-      {/* Skip button */}
-      <TouchableOpacity
-        style={styles.skipButton}
-        onPress={handleSkip}
-        activeOpacity={0.7}
+    <View style={[styles.container, { backgroundColor: isDark ? '#0a0a0f' : '#fafafa' }]}>
+      {/* Skip */}
+      <Pressable
+        style={styles.skipBtn}
+        onPress={onComplete}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Text style={[styles.skipText, { color: colors.text.secondary }]}>
-          Skip
-        </Text>
-      </TouchableOpacity>
+        <Text style={[styles.skipText, { color: colors.text.tertiary }]}>Skip</Text>
+      </Pressable>
 
-      {/* Cards ScrollView */}
+      {/* Slides */}
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -117,153 +123,216 @@ export default function TutorialScreen({ onComplete }: TutorialScreenProps) {
         scrollEventThrottle={16}
         style={styles.scrollView}
       >
-        {tutorialCards.map((card) => (
-          <View key={card.id} style={[styles.cardContainer, { width }]}>
-            <View style={styles.card}>
-              {/* Icon */}
-              <View
-                style={[
-                  styles.iconContainer,
-                  { backgroundColor: `${card.color}15` },
-                ]}
-              >
-                <Ionicons name={card.icon} size={64} color={card.color} />
-              </View>
+        {slides.map((s, i) => (
+          <View key={i} style={[styles.slide, { width }]}>
+            {/* Hero gradient circle */}
+            <LinearGradient
+              colors={s.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroCircle}
+            >
+              <Text style={styles.heroEmoji}>{s.emoji}</Text>
+            </LinearGradient>
 
-              {/* Title */}
-              <Text style={[styles.title, { color: colors.text.primary }]}>
-                {card.title}
-              </Text>
+            {/* Title */}
+            <Text style={[styles.title, { color: colors.text.primary }]}>
+              {s.title}
+            </Text>
 
-              {/* Description */}
-              <Text style={[styles.description, { color: colors.text.secondary }]}>
-                {card.description}
-              </Text>
+            {/* Subtitle */}
+            <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
+              {s.subtitle}
+            </Text>
+
+            {/* Feature List */}
+            <View style={styles.featureList}>
+              {s.features.map((f, fi) => (
+                <View
+                  key={fi}
+                  style={[
+                    styles.featureRow,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255,255,255,0.05)'
+                        : 'rgba(0,0,0,0.03)',
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.featureIcon,
+                      { backgroundColor: `${s.gradient[0]}20` },
+                    ]}
+                  >
+                    <Ionicons name={f.icon} size={18} color={s.gradient[0]} />
+                  </View>
+                  <Text
+                    style={[styles.featureText, { color: colors.text.secondary }]}
+                    numberOfLines={2}
+                  >
+                    {f.text}
+                  </Text>
+                </View>
+              ))}
             </View>
           </View>
         ))}
       </ScrollView>
 
-      {/* Pagination dots */}
-      <View style={styles.pagination}>
-        {tutorialCards.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              {
-                backgroundColor:
-                  index === currentIndex
-                    ? currentCard.color
-                    : colors.border.light,
-                width: index === currentIndex ? 24 : 8,
-              },
-            ]}
-          />
-        ))}
-      </View>
+      {/* Bottom Section */}
+      <View style={styles.bottomSection}>
+        {/* Dots */}
+        <View style={styles.dots}>
+          {slides.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                {
+                  width: i === currentIndex ? 28 : 8,
+                  backgroundColor:
+                    i === currentIndex ? slide.gradient[0] : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'),
+                },
+              ]}
+            />
+          ))}
+        </View>
 
-      {/* Next/Get Started button */}
-      <TouchableOpacity
-        style={[
-          styles.button,
-          { backgroundColor: currentCard.color },
-          getShadow('md'),
-        ]}
-        onPress={handleNext}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.buttonText}>
-          {currentIndex === tutorialCards.length - 1 ? 'Get Started' : 'Next'}
-        </Text>
-        <Ionicons
-          name={
-            currentIndex === tutorialCards.length - 1
-              ? 'checkmark'
-              : 'arrow-forward'
-          }
-          size={20}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
+        {/* CTA Button */}
+        <Pressable onPress={handleNext} style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
+          <LinearGradient
+            colors={[slide.gradient[0], slide.gradient[1]]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.ctaBtn}
+          >
+            <Text style={styles.ctaText}>
+              {isLast ? 'Get Started' : 'Next'}
+            </Text>
+            <Ionicons
+              name={isLast ? 'checkmark-circle' : 'arrow-forward'}
+              size={20}
+              color="#fff"
+            />
+          </LinearGradient>
+        </Pressable>
+      </View>
     </View>
   );
 }
+
+// ─── Styles ──────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  skipButton: {
+  skipBtn: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    right: 20,
+    top: Platform.OS === 'ios' ? 58 : 42,
+    right: 24,
     zIndex: 10,
-    padding: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   skipText: {
-    fontSize: Theme.fontSize.base,
-    fontWeight: Theme.fontWeight.medium as any,
+    fontSize: 15,
+    fontWeight: '500',
   },
   scrollView: {
     flex: 1,
   },
-  cardContainer: {
+
+  // ── Slide ──
+  slide: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 32,
+    paddingTop: Platform.OS === 'ios' ? 80 : 60,
+    paddingBottom: 20,
   },
-  card: {
+  heroCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    maxWidth: 400,
+    marginBottom: 28,
   },
-  iconContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 40,
+  heroEmoji: {
+    fontSize: 52,
   },
   title: {
-    fontSize: Theme.fontSize.xxxl,
-    fontWeight: Theme.fontWeight.bold as any,
+    fontSize: 28,
+    fontWeight: '800',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
+    letterSpacing: -0.5,
   },
-  description: {
-    fontSize: Theme.fontSize.lg,
+  subtitle: {
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: 20,
+    lineHeight: 22,
+    marginBottom: 28,
+    paddingHorizontal: 10,
   },
-  pagination: {
+
+  // ── Features ──
+  featureList: {
+    width: '100%',
+    maxWidth: 380,
+    gap: 10,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+  },
+  featureIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  featureText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  // ── Bottom ──
+  bottomSection: {
+    paddingHorizontal: 32,
+    paddingBottom: Platform.OS === 'ios' ? 50 : 36,
+  },
+  dots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
     gap: 8,
+    marginBottom: 24,
   },
   dot: {
     height: 8,
     borderRadius: 4,
   },
-  button: {
+  ctaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 32,
-    marginBottom: Platform.OS === 'ios' ? 50 : 40,
     paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: Theme.borderRadius.lg,
+    borderRadius: 16,
     gap: 8,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: Theme.fontSize.lg,
-    fontWeight: Theme.fontWeight.semibold as any,
+  ctaText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
   },
 });

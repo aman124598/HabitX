@@ -1,20 +1,20 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  ScrollView, 
-  Pressable, 
-  Dimensions, 
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Dimensions,
   Image,
   RefreshControl,
-  ActivityIndicator 
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withSpring, 
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
   withTiming,
   interpolate,
   Extrapolation,
@@ -27,19 +27,20 @@ import { getToday, isCompletedToday } from '../../lib/habitStats';
 import { Habit } from '../../lib/habitsApi';
 import { ThemedView, ThemedText } from '../../components/Themed';
 import { useTheme } from '../../lib/themeContext';
+import { getTodayTotalForHabits, getWeeklyLogs, formatElapsed } from '../../lib/timerStorage';
 
 const { width } = Dimensions.get('window');
 
 // ============ Circular Progress Ring ============
-function CircularProgress({ 
-  progress, 
-  size = 120, 
+function CircularProgress({
+  progress,
+  size = 120,
   strokeWidth = 8,
   color = '#DC2626',
   bgColor = 'rgba(255,255,255,0.1)',
-}: { 
-  progress: number; 
-  size?: number; 
+}: {
+  progress: number;
+  size?: number;
   strokeWidth?: number;
   color?: string;
   bgColor?: string;
@@ -89,11 +90,11 @@ function XPHeroCard() {
   const { user } = useAuth();
   const { totalXP, level, progressToNextLevel } = useXP();
   const { habits } = useHabits();
-  
+
   const xpToNextLevel = 100 - (totalXP % 100);
   const completedToday = habits.filter(h => isCompletedToday(h)).length;
   const totalStreakDays = habits.reduce((sum, h) => sum + h.streak, 0);
-  
+
   return (
     <LinearGradient
       colors={isDark ? ['#1a1a2e', '#16213e', '#0f3460'] : ['#667eea', '#764ba2', '#f093fb']}
@@ -104,13 +105,13 @@ function XPHeroCard() {
       {/* Decorative circles */}
       <View style={styles.heroDecor1} />
       <View style={styles.heroDecor2} />
-      
+
       <View style={styles.heroContent}>
         {/* Left side - XP Ring */}
         <View style={styles.heroLeft}>
-          <CircularProgress 
-            progress={progressToNextLevel} 
-            size={110} 
+          <CircularProgress
+            progress={progressToNextLevel}
+            size={110}
             strokeWidth={10}
             color="#fff"
             bgColor="rgba(255,255,255,0.2)"
@@ -121,7 +122,7 @@ function XPHeroCard() {
             <ThemedText style={styles.heroXPLabel}>XP</ThemedText>
           </View>
         </View>
-        
+
         {/* Right side - Stats */}
         <View style={styles.heroRight}>
           <ThemedText style={styles.heroGreeting}>
@@ -130,7 +131,7 @@ function XPHeroCard() {
           <ThemedText style={styles.heroSubtext}>
             {xpToNextLevel} XP to level {level + 1}
           </ThemedText>
-          
+
           <View style={styles.heroStats}>
             <View style={styles.heroStatItem}>
               <Ionicons name="checkmark-circle" size={18} color="rgba(255,255,255,0.9)" />
@@ -155,38 +156,38 @@ function QuickStatsGrid() {
   const { colors, isDark } = useTheme();
   const { habits } = useHabits();
   const { level } = useXP();
-  
+
   const todayCompleted = habits.filter(h => isCompletedToday(h)).length;
   const longestStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak)) : 0;
   const totalHabits = habits.length;
   const completionRate = totalHabits > 0 ? Math.round((todayCompleted / totalHabits) * 100) : 0;
 
   const stats = [
-    { 
-      icon: 'trophy' as const, 
-      value: longestStreak, 
-      label: 'Best Streak', 
+    {
+      icon: 'trophy' as const,
+      value: longestStreak,
+      label: 'Best Streak',
       color: '#FBBF24',
       bgColor: 'rgba(251, 191, 36, 0.15)'
     },
-    { 
-      icon: 'rocket' as const, 
-      value: level, 
-      label: 'Level', 
+    {
+      icon: 'rocket' as const,
+      value: level,
+      label: 'Level',
       color: '#60A5FA',
       bgColor: 'rgba(96, 165, 250, 0.15)'
     },
-    { 
-      icon: 'list' as const, 
-      value: totalHabits, 
-      label: 'Total Habits', 
+    {
+      icon: 'list' as const,
+      value: totalHabits,
+      label: 'Total Habits',
       color: '#A78BFA',
       bgColor: 'rgba(167, 139, 250, 0.15)'
     },
-    { 
-      icon: 'stats-chart' as const, 
-      value: `${completionRate}%`, 
-      label: 'Today Rate', 
+    {
+      icon: 'stats-chart' as const,
+      value: `${completionRate}%`,
+      label: 'Today Rate',
       color: '#34D399',
       bgColor: 'rgba(52, 211, 153, 0.15)'
     },
@@ -195,10 +196,10 @@ function QuickStatsGrid() {
   return (
     <View style={styles.statsGrid}>
       {stats.map((stat, index) => (
-        <Pressable 
-          key={index} 
+        <Pressable
+          key={index}
           style={[
-            styles.statGridItem, 
+            styles.statGridItem,
             { backgroundColor: colors.card.background, borderColor: colors.border.light }
           ]}
         >
@@ -230,19 +231,19 @@ function wasCompletedOnDate(habit: Habit, dateStr: string, todayStr: string): bo
   if (dateStr === todayStr) {
     return isCompletedToday(habit, todayStr);
   }
-  
+
   const daysAgo = getDaysAgo(dateStr);
-  
+
   if (!habit.lastCompletedOn) {
     return false;
   }
-  
+
   const daysSinceLastCompletion = getDaysAgo(habit.lastCompletedOn);
-  
+
   if (habit.streak > 0 && daysSinceLastCompletion <= daysAgo && habit.streak >= (daysAgo - daysSinceLastCompletion + 1)) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -251,32 +252,32 @@ function ActivityCalendar({ habits }: { habits: Habit[] }) {
   const { colors, isDark } = useTheme();
   const today = new Date();
   const todayStr = getToday();
-  
+
   const weeks = useMemo(() => {
     const data: { dateStr: string; rate: number; isToday: boolean }[][] = [];
     let currentWeek: { dateStr: string; rate: number; isToday: boolean }[] = [];
-    
+
     // Get data for last 12 weeks (84 days)
     for (let i = 83; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      
+
       const completedCount = habits.filter(h => wasCompletedOnDate(h, dateStr, todayStr)).length;
       const rate = habits.length === 0 ? 0 : Math.round((completedCount / habits.length) * 100);
-      
+
       currentWeek.push({ dateStr, rate, isToday: dateStr === todayStr });
-      
+
       if (currentWeek.length === 7) {
         data.push(currentWeek);
         currentWeek = [];
       }
     }
-    
+
     if (currentWeek.length > 0) {
       data.push(currentWeek);
     }
-    
+
     return data;
   }, [habits, today, todayStr]);
 
@@ -311,19 +312,19 @@ function ActivityCalendar({ habits }: { habits: Habit[] }) {
           </ThemedText>
         </View>
       </View>
-      
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={styles.calendarGrid}>
           {weeks.map((week, weekIndex) => (
             <View key={weekIndex} style={styles.calendarWeek}>
               {week.map((day, dayIndex) => (
-                <View 
+                <View
                   key={dayIndex}
                   style={[
                     styles.calendarCell,
                     { backgroundColor: getColor(day.rate) },
-                    day.isToday && { 
-                      borderWidth: 2, 
+                    day.isToday && {
+                      borderWidth: 2,
                       borderColor: colors.brand.primary,
                     },
                   ]}
@@ -333,13 +334,13 @@ function ActivityCalendar({ habits }: { habits: Habit[] }) {
           ))}
         </View>
       </ScrollView>
-      
+
       <View style={styles.calendarLegend}>
         <ThemedText variant="tertiary" size="xs">Less</ThemedText>
         {[0, 25, 50, 75, 100].map((rate, i) => (
-          <View 
-            key={i} 
-            style={[styles.calendarLegendDot, { backgroundColor: getColor(rate) }]} 
+          <View
+            key={i}
+            style={[styles.calendarLegendDot, { backgroundColor: getColor(rate) }]}
           />
         ))}
         <ThemedText variant="tertiary" size="xs">More</ThemedText>
@@ -351,8 +352,8 @@ function ActivityCalendar({ habits }: { habits: Habit[] }) {
 // ============ Top Streaks Card ============
 function TopStreaksCard({ habits }: { habits: Habit[] }) {
   const { colors, isDark } = useTheme();
-  const sortedHabits = useMemo(() => 
-    [...habits].sort((a, b) => b.streak - a.streak).slice(0, 5), 
+  const sortedHabits = useMemo(() =>
+    [...habits].sort((a, b) => b.streak - a.streak).slice(0, 5),
     [habits]
   );
 
@@ -383,23 +384,23 @@ function TopStreaksCard({ habits }: { habits: Habit[] }) {
           Top Streaks
         </ThemedText>
       </View>
-      
+
       {sortedHabits.map((habit, index) => {
         const maxStreak = sortedHabits[0]?.streak || 1;
         const progress = (habit.streak / Math.max(maxStreak, 30)) * 100;
-        
+
         return (
           <View key={habit.id} style={styles.streakRow}>
             <View style={styles.streakRank}>
-              <ThemedText 
-                variant={index < 3 ? 'primary' : 'tertiary'} 
-                weight="bold" 
+              <ThemedText
+                variant={index < 3 ? 'primary' : 'tertiary'}
+                weight="bold"
                 size="sm"
               >
                 #{index + 1}
               </ThemedText>
             </View>
-            
+
             <View style={styles.streakInfo}>
               <ThemedText variant="primary" weight="medium" size="sm" numberOfLines={1}>
                 {habit.name}
@@ -413,7 +414,7 @@ function TopStreaksCard({ habits }: { habits: Habit[] }) {
                 />
               </View>
             </View>
-            
+
             <View style={styles.streakValue}>
               <Ionicons name="flame" size={16} color="#FBBF24" />
               <ThemedText variant="primary" weight="bold" size="base" style={{ marginLeft: 4 }}>
@@ -431,7 +432,7 @@ function TopStreaksCard({ habits }: { habits: Habit[] }) {
 function TodayOverviewCard({ habits }: { habits: Habit[] }) {
   const { colors } = useTheme();
   const todayStr = getToday();
-  
+
   const completed = habits.filter(h => isCompletedToday(h, todayStr));
   const pending = habits.filter(h => !isCompletedToday(h, todayStr));
   const completionRate = habits.length > 0 ? Math.round((completed.length / habits.length) * 100) : 0;
@@ -448,16 +449,16 @@ function TodayOverviewCard({ habits }: { habits: Habit[] }) {
           </ThemedText>
         </View>
         <View style={[styles.todayBadge, { backgroundColor: completionRate === 100 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(251, 191, 36, 0.15)' }]}>
-          <ThemedText 
-            weight="bold" 
-            size="lg" 
+          <ThemedText
+            weight="bold"
+            size="lg"
             style={{ color: completionRate === 100 ? '#22C55E' : '#FBBF24' }}
           >
             {completionRate}%
           </ThemedText>
         </View>
       </View>
-      
+
       {/* Progress bar */}
       <View style={[styles.todayProgressBg, { backgroundColor: colors.background.tertiary }]}>
         <LinearGradient
@@ -467,7 +468,7 @@ function TodayOverviewCard({ habits }: { habits: Habit[] }) {
           style={[styles.todayProgressFill, { width: `${completionRate}%` }]}
         />
       </View>
-      
+
       {/* Stats row */}
       <View style={styles.todayStats}>
         <View style={styles.todayStatItem}>
@@ -481,6 +482,128 @@ function TodayOverviewCard({ habits }: { habits: Habit[] }) {
           <ThemedText variant="primary" weight="bold" size="sm">{pending.length}</ThemedText>
         </View>
       </View>
+    </View>
+  );
+}
+
+// ============ Time Insights Card ============
+function TimeInsightsCard({ habits }: { habits: Habit[] }) {
+  const { colors, isDark } = useTheme();
+  const [todayTotal, setTodayTotal] = useState(0);
+  const [perHabit, setPerHabit] = useState<{ habitId: string; elapsed: number }[]>([]);
+  const [weeklyData, setWeeklyData] = useState<{ date: string; elapsed: number }[]>([]);
+
+  // Load timer data
+  useEffect(() => {
+    if (habits.length === 0) return;
+
+    const loadData = async () => {
+      const habitIds = habits.map(h => h.id);
+      const todayResult = await getTodayTotalForHabits(habitIds);
+      setTodayTotal(todayResult.total);
+      setPerHabit(todayResult.perHabit.filter(p => p.elapsed > 0));
+
+      // Get weekly data for the first habit with time, or aggregate
+      let weekAgg: Record<string, number> = {};
+      for (const hid of habitIds) {
+        const logs = await getWeeklyLogs(hid);
+        for (const entry of logs) {
+          weekAgg[entry.date] = (weekAgg[entry.date] || 0) + entry.elapsed;
+        }
+      }
+      const weekArr = Object.entries(weekAgg)
+        .map(([date, elapsed]) => ({ date, elapsed }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+      setWeeklyData(weekArr);
+    };
+
+    loadData();
+  }, [habits]);
+
+  const maxWeekly = Math.max(...weeklyData.map(d => d.elapsed), 1);
+  const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  return (
+    <View style={[styles.timeCard, { backgroundColor: colors.card.background, borderColor: colors.border.light }]}>
+      <View style={styles.timeHeader}>
+        <View>
+          <ThemedText variant="primary" weight="bold" size="lg">
+            Time Tracking
+          </ThemedText>
+          <ThemedText variant="tertiary" size="xs">
+            Today's focus time
+          </ThemedText>
+        </View>
+        <View style={[styles.timeBadge, { backgroundColor: 'rgba(96, 165, 250, 0.15)' }]}>
+          <Ionicons name="timer-outline" size={16} color="#60A5FA" />
+          <ThemedText weight="bold" size="base" style={{ color: '#60A5FA', marginLeft: 6 }}>
+            {formatElapsed(todayTotal)}
+          </ThemedText>
+        </View>
+      </View>
+
+      {/* Per-habit breakdown */}
+      {perHabit.length > 0 && (
+        <View style={styles.timeBreakdown}>
+          {perHabit.map(({ habitId, elapsed }) => {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return null;
+            return (
+              <View key={habitId} style={styles.timeBreakdownRow}>
+                <ThemedText variant="secondary" size="sm" numberOfLines={1} style={{ flex: 1 }}>
+                  {habit.name}
+                </ThemedText>
+                <ThemedText variant="primary" weight="semibold" size="sm" style={{ fontVariant: ['tabular-nums'] }}>
+                  {formatElapsed(elapsed)}
+                </ThemedText>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* 7-day bar chart */}
+      {weeklyData.length > 0 && (
+        <View style={styles.timeChart}>
+          <ThemedText variant="tertiary" size="xs" style={{ marginBottom: 8 }}>
+            Last 7 days
+          </ThemedText>
+          <View style={styles.timeChartBars}>
+            {weeklyData.map((entry, i) => {
+              const height = entry.elapsed > 0 ? Math.max(6, (entry.elapsed / maxWeekly) * 60) : 4;
+              const dayOfWeek = new Date(entry.date).getDay();
+              const label = dayLabels[(dayOfWeek + 6) % 7]; // Adjust to Mon=0
+              return (
+                <View key={entry.date} style={styles.timeChartBarCol}>
+                  <View
+                    style={[
+                      styles.timeChartBar,
+                      {
+                        height,
+                        backgroundColor: entry.elapsed > 0
+                          ? '#60A5FA'
+                          : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                      },
+                    ]}
+                  />
+                  <ThemedText variant="tertiary" size="xs" style={{ marginTop: 4, fontSize: 9 }}>
+                    {label}
+                  </ThemedText>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {todayTotal === 0 && perHabit.length === 0 && (
+        <View style={styles.timeEmpty}>
+          <Ionicons name="timer-outline" size={32} color={colors.text.tertiary} />
+          <ThemedText variant="tertiary" size="sm" style={{ marginTop: 8, textAlign: 'center' }}>
+            Tap the play button on a habit{"\n"}to start tracking time
+          </ThemedText>
+        </View>
+      )}
     </View>
   );
 }
@@ -521,8 +644,8 @@ export default function StatsTab() {
 
   return (
     <ThemedView style={[styles.container, { backgroundColor: colors.background.primary }]}>
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -539,6 +662,9 @@ export default function StatsTab() {
 
         {/* Today's Overview */}
         <TodayOverviewCard habits={habits} />
+
+        {/* Time Tracking Insights */}
+        <TimeInsightsCard habits={habits} />
 
         {/* Quick Stats Grid */}
         <QuickStatsGrid />
@@ -557,10 +683,10 @@ export default function StatsTab() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
+  container: {
     flex: 1,
   },
-  scrollView: { 
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
@@ -828,5 +954,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 50,
     justifyContent: 'flex-end',
+  },
+
+  // Time Insights
+  timeCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+  },
+  timeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  timeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  timeBreakdown: {
+    marginBottom: 12,
+  },
+  timeBreakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  timeChart: {
+    marginTop: 4,
+  },
+  timeChartBars: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 80,
+    paddingTop: 12,
+  },
+  timeChartBarCol: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  timeChartBar: {
+    width: 18,
+    borderRadius: 4,
+    minHeight: 4,
+  },
+  timeEmpty: {
+    alignItems: 'center',
+    paddingVertical: 20,
   },
 });

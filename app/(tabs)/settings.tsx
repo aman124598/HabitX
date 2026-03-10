@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { View, ScrollView, StyleSheet, Pressable, Alert, Switch, TextInput, Modal } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, Alert, Switch, TextInput, Modal, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
@@ -18,6 +18,8 @@ import { Theme } from "../../lib/theme";
 import { habitsService } from "../../lib/habitsApi";
 import { useRouter } from 'expo-router';
 import NotificationSettingsScreen from "../../components/settings/NotificationSettingsScreen";
+import EditProfileModal from "../../components/settings/EditProfileModal";
+import { UserAvatar } from "../../components/UserAvatar";
 
 const SETTINGS_KEYS = {
   NOTIFICATIONS_ENABLED: 'settings:notificationsEnabled',
@@ -41,14 +43,14 @@ interface AppSettings {
 }
 
 // Clean settings item component
-function SettingsItem({ 
-  icon, 
-  title, 
-  subtitle, 
-  onPress, 
+function SettingsItem({
+  icon,
+  title,
+  subtitle,
+  onPress,
   rightElement,
   danger = false,
-}: { 
+}: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle?: string;
@@ -57,26 +59,26 @@ function SettingsItem({
   danger?: boolean;
 }) {
   const { colors } = useTheme();
-  
+
   return (
-    <Pressable 
-      onPress={onPress} 
+    <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.settingsItem,
         pressed && { opacity: 0.7 }
       ]}
     >
       <View style={[styles.iconBox, { backgroundColor: danger ? 'rgba(239, 68, 68, 0.1)' : colors.background.tertiary }]}>
-        <Ionicons 
-          name={icon} 
-          size={20} 
-          color={danger ? colors.status.error : colors.brand.primary} 
+        <Ionicons
+          name={icon}
+          size={20}
+          color={danger ? colors.status.error : colors.brand.primary}
         />
       </View>
       <View style={styles.itemContent}>
-        <ThemedText 
-          variant="primary" 
-          weight="medium" 
+        <ThemedText
+          variant="primary"
+          weight="medium"
           size="base"
           style={danger ? { color: colors.status.error } : undefined}
         >
@@ -99,10 +101,10 @@ function SettingsItem({
 function SectionHeader({ title }: { title: string }) {
   const { colors } = useTheme();
   return (
-    <ThemedText 
-      variant="tertiary" 
-      weight="semibold" 
-      size="xs" 
+    <ThemedText
+      variant="tertiary"
+      weight="semibold"
+      size="xs"
       style={[styles.sectionHeader, { color: colors.text.tertiary }]}
     >
       {title.toUpperCase()}
@@ -126,18 +128,25 @@ export default function SettingsTab() {
   const { user, logout } = useAuth();
   const { setHasSeenTutorial } = useTutorial();
   const router = useRouter();
-  
+
   const [settings, setSettings] = useState<AppSettings>({
     notificationsEnabled: false,
     backupAuto: false,
     dailyReminderTime: '09:00',
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState<string | null>(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [helpSearchQuery, setHelpSearchQuery] = useState('');
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+
+  // Load locally-stored avatar
+  useEffect(() => {
+    AsyncStorage.getItem('@habit_user_avatar').then(v => setLocalAvatar(v));
+  }, [showEditProfile]); // Refresh when edit modal closes
 
   const closeModal = () => setShowModal(null);
 
@@ -211,14 +220,14 @@ export default function SettingsTab() {
         habits: habits,
         settings: settings,
       };
-      
+
       const exportsDir = `${FS.documentDirectory}HabitTracker/exports/`;
       try {
         const dirInfo = await FS.getInfoAsync(exportsDir);
         if (!dirInfo.exists) {
           await FS.makeDirectoryAsync(exportsDir, { intermediates: true });
         }
-      } catch (e) {}
+      } catch (e) { }
 
       const fileName = `habit_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
       const fileUri = `${exportsDir}${fileName}`;
@@ -228,7 +237,7 @@ export default function SettingsTab() {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, { dialogTitle: 'Share Habit Backup' });
         }
-      } catch (shareErr) {}
+      } catch (shareErr) { }
 
       Alert.alert('Backup Created', `${habits.length} habits backed up successfully.`);
     } catch (error) {
@@ -280,14 +289,14 @@ export default function SettingsTab() {
         habit.streak || 0,
         habit.lastCompletedOn || 'Never',
       ]);
-      
+
       const csvContent = [csvHeaders.join(','), ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
-      
+
       const exportsDir = `${FS.documentDirectory}HabitTracker/exports/`;
       try {
         const dirInfo = await FS.getInfoAsync(exportsDir);
         if (!dirInfo.exists) await FS.makeDirectoryAsync(exportsDir, { intermediates: true });
-      } catch (e) {}
+      } catch (e) { }
 
       const fileName = `habits_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
       const fileUri = `${exportsDir}${fileName}`;
@@ -311,33 +320,39 @@ export default function SettingsTab() {
         <ThemedText variant="primary" weight="bold" size="xxxl">Settings</ThemedText>
       </View>
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Card */}
-        <View style={[styles.profileCard, { backgroundColor: colors.card.background, borderColor: colors.border.light }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.brand.primary }]}>
-            <ThemedText style={styles.avatarText}>
-              {(user?.username || 'U').charAt(0).toUpperCase()}
-            </ThemedText>
-          </View>
-          <View style={styles.profileInfo}>
-            <ThemedText variant="primary" weight="bold" size="xl">
-              {user?.username || 'User'}
-            </ThemedText>
-            <ThemedText variant="tertiary" size="sm">
-              {user?.email || 'No email'}
-            </ThemedText>
-            <View style={styles.statsRow}>
-              <View style={[styles.statBadge, { backgroundColor: colors.background.tertiary }]}>
-                <ThemedText variant="primary" weight="semibold" size="sm">
-                  {habits.length} habits
-                </ThemedText>
+        <Pressable
+          onPress={() => setShowEditProfile(true)}
+          style={({ pressed }) => [pressed && { opacity: 0.8 }]}
+        >
+          <View style={[styles.profileCard, { backgroundColor: colors.card.background, borderColor: colors.border.light }]}>
+            <UserAvatar
+              username={user?.username || 'U'}
+              avatarUrl={localAvatar || user?.avatar}
+              size="lg"
+            />
+            <View style={[styles.profileInfo, { marginLeft: 16 }]}>
+              <ThemedText variant="primary" weight="bold" size="xl">
+                {user?.username || 'User'}
+              </ThemedText>
+              <ThemedText variant="tertiary" size="sm">
+                {user?.email || 'No email'}
+              </ThemedText>
+              <View style={styles.statsRow}>
+                <View style={[styles.statBadge, { backgroundColor: colors.background.tertiary }]}>
+                  <ThemedText variant="primary" weight="semibold" size="sm">
+                    {habits.length} habits
+                  </ThemedText>
+                </View>
               </View>
             </View>
+            <Ionicons name="create-outline" size={20} color={colors.text.tertiary} />
           </View>
-        </View>
+        </Pressable>
 
         {/* Notifications Section */}
         <SectionHeader title="Notifications" />
@@ -374,10 +389,10 @@ export default function SettingsTab() {
             onPress={() => setThemeMode(isDark ? 'light' : 'dark')}
             rightElement={
               <View style={[styles.themeBadge, { backgroundColor: colors.background.tertiary }]}>
-                <Ionicons 
-                  name={isDark ? "moon" : "sunny"} 
-                  size={16} 
-                  color={colors.brand.primary} 
+                <Ionicons
+                  name={isDark ? "moon" : "sunny"}
+                  size={16}
+                  color={colors.brand.primary}
                 />
               </View>
             }
@@ -463,8 +478,8 @@ export default function SettingsTab() {
             onPress={() => {
               Alert.alert('Clear All Data', 'This cannot be undone.', [
                 { text: 'Cancel' },
-                { 
-                  text: 'Delete All', 
+                {
+                  text: 'Delete All',
                   style: 'destructive',
                   onPress: () => {
                     Alert.alert('Confirm', 'Are you absolutely sure?', [
@@ -519,7 +534,7 @@ export default function SettingsTab() {
                 <Ionicons name="close" size={24} color={colors.text.primary} />
               </Pressable>
             </View>
-            
+
             <View style={[styles.searchBox, { backgroundColor: colors.background.tertiary }]}>
               <Ionicons name="search" size={18} color={colors.text.tertiary} />
               <TextInput
@@ -538,13 +553,13 @@ export default function SettingsTab() {
                 { q: 'How do I set up reminders?', a: 'Enable notifications in Settings, then configure your preferred reminder times.', id: '3' },
                 { q: 'Can I export my data?', a: 'Yes! Go to Data Management and tap Export to CSV.', id: '4' },
                 { q: 'How do I restore a backup?', a: 'Go to Data Management, tap Restore Backup, and select your backup file.', id: '5' },
-              ].filter(item => 
-                !helpSearchQuery || 
+              ].filter(item =>
+                !helpSearchQuery ||
                 item.q.toLowerCase().includes(helpSearchQuery.toLowerCase()) ||
                 item.a.toLowerCase().includes(helpSearchQuery.toLowerCase())
               ).map((item) => (
-                <Pressable 
-                  key={item.id} 
+                <Pressable
+                  key={item.id}
                   style={[styles.faqItem, { backgroundColor: colors.background.tertiary }]}
                   onPress={() => setExpandedFAQ(expandedFAQ === item.id ? null : item.id)}
                 >
@@ -552,10 +567,10 @@ export default function SettingsTab() {
                     <ThemedText variant="primary" weight="medium" size="base" style={styles.faqQ}>
                       {item.q}
                     </ThemedText>
-                    <Ionicons 
-                      name={expandedFAQ === item.id ? "chevron-up" : "chevron-down"} 
-                      size={18} 
-                      color={colors.text.tertiary} 
+                    <Ionicons
+                      name={expandedFAQ === item.id ? "chevron-up" : "chevron-down"}
+                      size={18}
+                      color={colors.text.tertiary}
                     />
                   </View>
                   {expandedFAQ === item.id && (
@@ -568,6 +583,19 @@ export default function SettingsTab() {
             </ScrollView>
           </View>
         </View>
+      </Modal>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={showEditProfile}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowEditProfile(false)}
+      >
+        <EditProfileModal
+          visible={showEditProfile}
+          onClose={() => setShowEditProfile(false)}
+        />
       </Modal>
     </ThemedView>
   );

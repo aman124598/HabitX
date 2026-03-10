@@ -4,7 +4,6 @@ import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import SafeNotifications from './safeNotifications';
-import { authService } from './auth';
 
 // Background task names
 const MORNING_REMINDER_TASK = 'morning-reminder-task';
@@ -99,6 +98,7 @@ class EnhancedNotificationService {
     try {
       await this.loadSettings();
       await this.setupNotificationHandler();
+      await this.setupAndroidChannel();
       await this.requestPermissions();
       await this.registerBackgroundTasks();
       this.isInitialized = true;
@@ -108,13 +108,32 @@ class EnhancedNotificationService {
     }
   }
 
+  // Create Android notification channel (required for Android 8+)
+  private async setupAndroidChannel() {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Habit Reminders',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#DC2626',
+        sound: 'default',
+      });
+      await Notifications.setNotificationChannelAsync('streaks', {
+        name: 'Streak Alerts',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        sound: 'default',
+      });
+    }
+  }
+
   // Setup notification handler
   private async setupNotificationHandler() {
     SafeNotifications.setNotificationHandler({
-      handleNotification: async (notification) => {
+      handleNotification: async () => {
         const isQuietHours = this.isQuietHours();
         return {
-          shouldShowBanner: false,
+          shouldShowAlert: !isQuietHours,
+          shouldShowBanner: !isQuietHours,
           shouldShowList: true,
           shouldPlaySound: !isQuietHours,
           shouldSetBadge: false,
@@ -141,7 +160,7 @@ class EnhancedNotificationService {
     try {
       this.settings = { ...this.settings, ...settings };
       await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
-      
+
       // Re-register background tasks if settings changed
       if (settings.morningTime || settings.eveningTime || settings.enabled) {
         await this.registerBackgroundTasks();
@@ -160,18 +179,18 @@ class EnhancedNotificationService {
   private isQuietHours(): boolean {
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
-    
+
     const [quietStart] = this.settings.quietHoursStart.split(':').map(Number);
     const [quietEnd] = this.settings.quietHoursEnd.split(':').map(Number);
-    
+
     const quietStartMinutes = quietStart * 60;
     const quietEndMinutes = quietEnd * 60;
-    
+
     // Handle overnight quiet hours (e.g., 22:00 to 07:00)
     if (quietStartMinutes > quietEndMinutes) {
       return currentTime >= quietStartMinutes || currentTime < quietEndMinutes;
     }
-    
+
     return currentTime >= quietStartMinutes && currentTime < quietEndMinutes;
   }
 
@@ -199,13 +218,13 @@ class EnhancedNotificationService {
   private async unregisterBackgroundTasks() {
     try {
       const registeredTasks = await TaskManager.getRegisteredTasksAsync();
-      
+
       for (const task of registeredTasks) {
         if ([MORNING_REMINDER_TASK, EVENING_REMINDER_TASK, STREAK_CHECK_TASK].includes(task.taskName)) {
           await BackgroundFetch.unregisterTaskAsync(task.taskName);
         }
       }
-      
+
       console.log('Background tasks unregistered');
     } catch (error) {
       console.error('Failed to unregister background tasks:', error);
@@ -234,6 +253,7 @@ class EnhancedNotificationService {
         body: message,
         data: { type: 'morning_reminder' },
         sound: 'default',
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: null,
     });
@@ -263,6 +283,7 @@ class EnhancedNotificationService {
         body: message,
         data: { type: 'evening_reminder' },
         sound: 'default',
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: null,
     });
@@ -275,7 +296,7 @@ class EnhancedNotificationService {
     try {
       const lastCheckStr = await AsyncStorage.getItem(LAST_STREAK_CHECK_KEY);
       const now = new Date();
-      
+
       // Only check once per day
       if (lastCheckStr) {
         const lastCheck = new Date(lastCheckStr);
@@ -286,7 +307,7 @@ class EnhancedNotificationService {
 
       // Send motivational streak reminders
       await this.sendStreakMotivation();
-      
+
       await AsyncStorage.setItem(LAST_STREAK_CHECK_KEY, now.toISOString());
     } catch (error) {
       console.error('Failed to check streak status:', error);
@@ -315,6 +336,7 @@ class EnhancedNotificationService {
         body: message,
         data: { type: 'streak_motivation' },
         sound: 'default',
+        ...(Platform.OS === 'android' ? { channelId: 'streaks' } : {}),
       },
       trigger: null,
     });
@@ -333,39 +355,69 @@ class EnhancedNotificationService {
       // Schedule morning reminder
       if (this.settings.morningReminders) {
         const [morningHour, morningMinute] = this.settings.morningTime.split(':').map(Number);
-        await SafeNotifications.scheduleNotificationAsync({
-          content: {
-            title: '🌅 Good Morning!',
-            body: 'Start your day with purpose - check your habits!',
-            data: { type: 'morning_reminder' },
-            sound: 'default',
-          },
-          trigger: {
-            type: 'calendar',
-            hour: morningHour,
-            minute: morningMinute,
-            repeats: true,
-          } as Notifications.CalendarTriggerInput,
+        const morningTrigger = SafeNotifications.createTrigger({
+          type: 'calendar',
+          hour: morningHour,
+          minute: morningMinute,
+          repeats: true,
         });
+        if (morningTrigger) {
+          await SafeNotifications.scheduleNotificationAsync({
+            content: {
+              title: '🌅 Good Morning!',
+              body: 'Start your day with purpose - check your habits!',
+              data: { type: 'morning_reminder' },
+              sound: 'default',
+              ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
+            },
+            trigger: morningTrigger,
+          });
+        }
       }
 
       // Schedule evening reminder
       if (this.settings.eveningReminders) {
         const [eveningHour, eveningMinute] = this.settings.eveningTime.split(':').map(Number);
-        await SafeNotifications.scheduleNotificationAsync({
-          content: {
-            title: '🌙 Evening Check-in',
-            body: 'Don\'t forget to complete your habits before bed.',
-            data: { type: 'evening_reminder' },
-            sound: 'default',
-          },
-          trigger: {
-            type: 'calendar',
-            hour: eveningHour,
-            minute: eveningMinute,
-            repeats: true,
-          } as Notifications.CalendarTriggerInput,
+        const eveningTrigger = SafeNotifications.createTrigger({
+          type: 'calendar',
+          hour: eveningHour,
+          minute: eveningMinute,
+          repeats: true,
         });
+        if (eveningTrigger) {
+          await SafeNotifications.scheduleNotificationAsync({
+            content: {
+              title: '🌙 Evening Check-in',
+              body: 'Don\'t forget to complete your habits before bed.',
+              data: { type: 'evening_reminder' },
+              sound: 'default',
+              ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
+            },
+            trigger: eveningTrigger,
+          });
+        }
+      }
+
+      // Schedule a midday streak reminder
+      if (this.settings.streakReminders) {
+        const streakTrigger = SafeNotifications.createTrigger({
+          type: 'calendar',
+          hour: 14,
+          minute: 0,
+          repeats: true,
+        });
+        if (streakTrigger) {
+          await SafeNotifications.scheduleNotificationAsync({
+            content: {
+              title: '🔥 Streak Check',
+              body: 'Don\'t break your streak! Complete your habits today.',
+              data: { type: 'streak_motivation' },
+              sound: 'default',
+              ...(Platform.OS === 'android' ? { channelId: 'streaks' } : {}),
+            },
+            trigger: streakTrigger,
+          });
+        }
       }
 
       console.log('Daily reminders scheduled successfully');
@@ -419,7 +471,7 @@ class EnhancedNotificationService {
   // Handle notification tap
   handleNotificationResponse(response: Notifications.NotificationResponse) {
     const data = response.notification.request.content.data;
-    
+
     // Navigation logic based on notification type
     switch (data.type) {
       case 'morning_reminder':
@@ -450,7 +502,7 @@ class EnhancedNotificationService {
     try {
       const scheduledNotifications = await SafeNotifications.getAllScheduledNotificationsAsync();
       const registeredTasks = await TaskManager.getRegisteredTasksAsync();
-      
+
       return {
         settings: this.settings,
         scheduledNotifications: scheduledNotifications.length,

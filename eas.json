@@ -6,44 +6,62 @@
   "build": {
     "samsung-store": {
       "distribution": "store",
-      "env": { "NODE_VERSION": "20.19.4" },
+      "env": {
+        "NODE_VERSION": "20.19.4"
+      },
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
       },
       "autoIncrement": true,
-      "developmentClient": false
+      "developmentClient": false,
+      "channel": "samsung-store"
     },
     "production-apk": {
       "distribution": "store",
-      "env": { "NODE_VERSION": "20.19.4" },
+      "env": {
+        "NODE_VERSION": "20.19.4"
+      },
       "android": {
         "buildType": "apk"
       },
       "autoIncrement": true,
-      "developmentClient": false
+      "developmentClient": false,
+      "channel": "production-apk"
     },
     "production-aab": {
       "distribution": "store",
-      "env": { "NODE_VERSION": "20.19.4" },
+      "env": {
+        "NODE_VERSION": "20.19.4"
+      },
       "android": {
         "buildType": "app-bundle"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production-aab"
     },
     "production": {
       "distribution": "store",
-      "env": { "NODE_VERSION": "20.19.4" },
-      "android": {}
+      "env": {
+        "NODE_VERSION": "20.19.4"
+      },
+      "android": {},
+      "channel": "production"
     },
     "preview": {
       "distribution": "internal",
-      "env": { "NODE_VERSION": "20.19.4" }
+      "env": {
+        "NODE_VERSION": "20.19.4"
+      },
+      "channel": "preview"
     },
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "NODE_VERSION": "20.19.4" }
+      "env": {
+        "NODE_VERSION": "20.19.4"
+      },
+      "channel": "development"
     }
   },
   "submit": {
