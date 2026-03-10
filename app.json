@@ -76,6 +76,7 @@
       ],
       "expo-background-fetch",
       "expo-task-manager",
+      "expo-updates",
       "expo-web-browser",
       [
         "expo-image-picker",
