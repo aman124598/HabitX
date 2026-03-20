@@ -13,6 +13,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@tailwindcss/vite": "^4.2.2",
+    "@vercel/analytics": "^2.0.1",
     "autoprefixer": "^10.4.27",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.577.0",
