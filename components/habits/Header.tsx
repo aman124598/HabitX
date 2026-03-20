@@ -1,17 +1,20 @@
-import React, { useEffect } from 'react';
-import { View, Pressable, StyleSheet, Platform, StatusBar } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { View, Pressable, StyleSheet, Platform, StatusBar, ScrollView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withSequence,
   withTiming,
+  FadeIn,
 } from 'react-native-reanimated';
 import { ThemedText } from '../Themed';
 import { useTheme } from '../../lib/themeContext';
 import Theme from '../../lib/theme';
+import Svg, { Path, Circle } from 'react-native-svg';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const DATE_ITEM_WIDTH = 52;
 
 type HeaderProps = {
   onSettings?: () => void;
@@ -21,202 +24,186 @@ type HeaderProps = {
   successRate: number;
   greeting: string;
   subtitle: string;
+  selectedDate?: Date;
+  onDateSelect?: (date: Date) => void;
 };
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+function getWeekDates(centerDate: Date): Date[] {
+  const dates: Date[] = [];
+  // Show 9 days: 4 before, today, 4 after
+  for (let i = -4; i <= 4; i++) {
+    const d = new Date(centerDate);
+    d.setDate(centerDate.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+}
 
-function StatCard({ 
-  icon, 
-  iconColor, 
-  value, 
-  label,
-}: { 
-  icon: keyof typeof Ionicons.glyphMap; 
-  iconColor: string; 
-  value: string | number; 
-  label: string;
+const DAY_NAMES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+
+function DateItem({ date, isToday, isSelected, onPress }: {
+  date: Date;
+  isToday: boolean;
+  isSelected: boolean;
+  onPress: () => void;
 }) {
   const scale = useSharedValue(1);
-
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   return (
-    <AnimatedPressable
-      onPressIn={() => { scale.value = withSpring(0.95, { damping: 15, stiffness: 400 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 300 }); }}
-      style={[animatedStyle, styles.statCard]}
-    >
-      <View style={styles.statCardInner}>
-        <View style={[styles.statIconContainer, { backgroundColor: `${iconColor}25` }]}>
-          <Ionicons name={icon} size={22} color={iconColor} />
-        </View>
-        <View style={styles.statContent}>
-          <ThemedText variant="inverse" size="xl" weight="bold" style={styles.statValue}>
-            {value}
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPressIn={() => { scale.value = withSpring(0.9, { damping: 15, stiffness: 400 }); }}
+        onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 300 }); }}
+        onPress={onPress}
+        style={[
+          styles.dateItem,
+          isSelected && styles.dateItemSelected,
+        ]}
+      >
+        <ThemedText
+          style={[
+            styles.dayName,
+            { color: isSelected ? '#FFFFFF' : 'rgba(255,255,255,0.5)' },
+          ]}
+        >
+          {DAY_NAMES[date.getDay()]}
+        </ThemedText>
+        <View style={[
+          styles.dateCircle,
+          isSelected && styles.dateCircleSelected,
+        ]}>
+          <ThemedText
+            style={[
+              styles.dateNumber,
+              { color: isSelected ? '#1A1A2E' : 'rgba(255,255,255,0.8)' },
+            ]}
+          >
+            {date.getDate()}
           </ThemedText>
-          <ThemedText variant="inverse" size="xs" weight="medium" style={styles.statLabel}>
-            {label}
-          </ThemedText>
         </View>
-      </View>
-    </AnimatedPressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
-function IconButton({ 
-  icon, 
-  onPress, 
-  accessibilityLabel,
-  size = 20,
-}: { 
-  icon: keyof typeof Ionicons.glyphMap; 
-  onPress: () => void; 
-  accessibilityLabel: string;
-  size?: number;
-}) {
-  const scale = useSharedValue(1);
-  const rotation = useSharedValue(0);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { rotate: `${rotation.value}deg` }
-    ],
-  }));
-
-  const handlePress = () => {
-    // Add rotation animation for theme toggle
-    if (accessibilityLabel === 'Toggle theme') {
-      rotation.value = withSequence(
-        withSpring(20, { damping: 8, stiffness: 400 }),
-        withSpring(-20, { damping: 8, stiffness: 400 }),
-        withSpring(0, { damping: 10, stiffness: 300 })
-      );
-    }
-    onPress();
-  };
-
+function LandscapeDecoration() {
   return (
-    <AnimatedPressable
-      onPressIn={() => { scale.value = withSpring(0.85, { damping: 15, stiffness: 400 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 300 }); }}
-      onPress={handlePress}
-      accessibilityLabel={accessibilityLabel}
-      style={[animatedStyle, styles.headerIconButton]}
-    >
-      <Ionicons name={icon} size={size} color="white" />
-    </AnimatedPressable>
+    <View style={styles.landscapeContainer} pointerEvents="none">
+      <Svg width={SCREEN_WIDTH} height={120} viewBox={`0 0 ${SCREEN_WIDTH} 120`}>
+        {/* Rolling hills - back layer */}
+        <Path
+          d={`M0 90 Q${SCREEN_WIDTH * 0.15} 50, ${SCREEN_WIDTH * 0.3} 70 Q${SCREEN_WIDTH * 0.45} 90, ${SCREEN_WIDTH * 0.55} 65 Q${SCREEN_WIDTH * 0.7} 40, ${SCREEN_WIDTH * 0.85} 60 Q${SCREEN_WIDTH} 80, ${SCREEN_WIDTH} 75 L${SCREEN_WIDTH} 120 L0 120 Z`}
+          fill="rgba(255,255,255,0.04)"
+        />
+        {/* Rolling hills - front layer */}
+        <Path
+          d={`M0 100 Q${SCREEN_WIDTH * 0.1} 80, ${SCREEN_WIDTH * 0.25} 85 Q${SCREEN_WIDTH * 0.4} 90, ${SCREEN_WIDTH * 0.5} 78 Q${SCREEN_WIDTH * 0.65} 65, ${SCREEN_WIDTH * 0.8} 80 Q${SCREEN_WIDTH * 0.9} 90, ${SCREEN_WIDTH} 85 L${SCREEN_WIDTH} 120 L0 120 Z`}
+          fill="rgba(255,255,255,0.06)"
+        />
+        {/* Accent dots - like birds/stars */}
+        <Circle cx={SCREEN_WIDTH * 0.2} cy={55} r={3} fill="rgba(45,212,191,0.6)" />
+        <Circle cx={SCREEN_WIDTH * 0.35} cy={45} r={2} fill="rgba(45,212,191,0.4)" />
+        <Circle cx={SCREEN_WIDTH * 0.7} cy={50} r={3} fill="rgba(45,212,191,0.6)" />
+        <Circle cx={SCREEN_WIDTH * 0.85} cy={40} r={2} fill="rgba(45,212,191,0.4)" />
+        <Circle cx={SCREEN_WIDTH * 0.55} cy={35} r={2.5} fill="rgba(45,212,191,0.5)" />
+      </Svg>
+    </View>
   );
 }
 
-export default function Header({ 
-  onSettings, 
-  onProfile, 
-  onToggleTheme, 
-  currentStreak, 
-  successRate, 
-  greeting, 
-  subtitle 
+export default function Header({
+  onSettings,
+  onProfile,
+  onToggleTheme,
+  currentStreak,
+  successRate,
+  greeting,
+  subtitle,
+  selectedDate: propSelectedDate,
+  onDateSelect,
 }: HeaderProps) {
   const { colors, isDark } = useTheme();
-  const greetingOpacity = useSharedValue(0);
-  const greetingTranslateY = useSharedValue(20);
-  const statsOpacity = useSharedValue(0);
-  const statsTranslateY = useSharedValue(15);
+  const today = useMemo(() => new Date(), []);
+  const selectedDate = propSelectedDate || today;
+  const dates = useMemo(() => getWeekDates(today), [today]);
+  const scrollRef = useRef<ScrollView>(null);
 
-  // Entrance animations
+  // Auto-scroll to today on mount
   useEffect(() => {
-    greetingOpacity.value = withTiming(1, { duration: 600 });
-    greetingTranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
-    
-    statsOpacity.value = withTiming(1, { duration: 600 });
-    statsTranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+    const todayIndex = 4; // center of the 9 dates
+    const scrollX = todayIndex * DATE_ITEM_WIDTH - (SCREEN_WIDTH - DATE_ITEM_WIDTH) / 2;
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ x: Math.max(0, scrollX), animated: false });
+    }, 100);
   }, []);
 
-  const greetingAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: greetingOpacity.value,
-    transform: [{ translateY: greetingTranslateY.value }],
-  }));
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
 
-  const statsAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: statsOpacity.value,
-    transform: [{ translateY: statsTranslateY.value }],
-  }));
-  
+  const headerBg = isDark ? '#1A1A2E' : colors.brand.gradient[0];
+
   return (
     <View style={styles.wrapper}>
-      <LinearGradient 
-        colors={colors.brand.gradient}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+      <View style={[styles.headerBackground, { backgroundColor: headerBg }]}>
+        {/* Decorative landscape */}
+        <LandscapeDecoration />
+
         <View style={styles.container}>
-          {/* Top Row - Greeting & Actions */}
-          <Animated.View style={[styles.topRow, greetingAnimatedStyle]}>
-            <View style={styles.greetingContainer}>
-              <ThemedText variant="inverse" size="xxl" weight="bold" style={styles.greeting}>
-                {greeting}
-              </ThemedText>
-              <ThemedText variant="inverse" size="sm" weight="medium" style={styles.subtitle}>
-                {subtitle}
-              </ThemedText>
-            </View>
-            
-            <View style={styles.actionButtons}>
+          {/* Top Row - Title & Actions */}
+          <Animated.View entering={FadeIn.duration(400)} style={styles.topRow}>
+            <View style={styles.topRowLeft}>
               {onToggleTheme && (
-                <IconButton 
-                  icon={isDark ? 'sunny-outline' : 'moon-outline'} 
-                  onPress={onToggleTheme} 
-                  accessibilityLabel="Toggle theme"
-                />
+                <Pressable onPress={onToggleTheme} style={styles.iconBtn}>
+                  <Ionicons
+                    name={isDark ? 'sunny-outline' : 'moon-outline'}
+                    size={20}
+                    color="rgba(255,255,255,0.7)"
+                  />
+                </Pressable>
               )}
+            </View>
+
+            <ThemedText style={styles.titleText}>Today</ThemedText>
+
+            <View style={styles.topRowRight}>
               {onProfile && (
-                <IconButton 
-                  icon="person-circle-outline" 
-                  onPress={onProfile} 
-                  accessibilityLabel="Profile"
-                  size={24}
-                />
+                <Pressable onPress={onProfile} style={styles.iconBtn}>
+                  <Ionicons name="person-circle-outline" size={22} color="rgba(255,255,255,0.7)" />
+                </Pressable>
               )}
               {onSettings && (
-                <IconButton 
-                  icon="settings-outline" 
-                  onPress={onSettings} 
-                  accessibilityLabel="Settings"
-                />
+                <Pressable onPress={onSettings} style={styles.iconBtn}>
+                  <Ionicons name="settings-outline" size={20} color="rgba(255,255,255,0.7)" />
+                </Pressable>
               )}
             </View>
           </Animated.View>
 
-          {/* Stats Row */}
-          <Animated.View style={[styles.statsRow, statsAnimatedStyle]}>
-            <StatCard 
-              icon="flame" 
-              iconColor="#FBBF24" 
-              value={currentStreak} 
-              label="Streak"
-            />
-            <StatCard 
-              icon="checkmark-circle" 
-              iconColor="#34D399" 
-              value={`${successRate}%`} 
-              label="Today"
-            />
+          {/* Date Strip */}
+          <Animated.View entering={FadeIn.duration(500).delay(100)}>
+            <ScrollView
+              ref={scrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.dateStrip}
+            >
+              {dates.map((date, i) => (
+                <DateItem
+                  key={i}
+                  date={date}
+                  isToday={isSameDay(date, today)}
+                  isSelected={isSameDay(date, selectedDate)}
+                  onPress={() => onDateSelect?.(date)}
+                />
+              ))}
+            </ScrollView>
           </Animated.View>
         </View>
-      </LinearGradient>
-      
-      {/* Curved bottom with enhanced styling */}
-      <View style={styles.curvedBottom}>
-        <LinearGradient 
-          colors={colors.brand.gradient}
-          style={styles.curvedGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
       </View>
     </View>
   );
@@ -226,111 +213,98 @@ const styles = StyleSheet.create({
   wrapper: {
     position: 'relative',
   },
-  
-  gradient: { 
-    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 16,
-    paddingBottom: 28,
-    overflow: 'hidden',
-  },
-  
-  container: {
-    paddingHorizontal: Theme.spacing.lg,
-    zIndex: 1,
-  },
-  
-  topRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'flex-start',
-    marginBottom: Theme.spacing.xl,
-  },
-  
-  greetingContainer: {
-    flex: 1,
-    paddingRight: Theme.spacing.md,
-  },
-  
-  greeting: {
-    marginBottom: 6,
-    textShadowColor: 'rgba(0, 0, 0, 0.15)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
-  },
-  
-  subtitle: {
-    opacity: 0.85,
-    letterSpacing: 0.3,
-  },
-  
-  actionButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  
-  headerIconButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  
-  statsRow: {
-    flexDirection: 'row',
-    gap: Theme.spacing.md,
-  },
-  
-  statCard: {
-    flex: 1,
-  },
-  
-  statCardInner: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: Theme.borderRadius.lg,
-    padding: Theme.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    height: 72,
-  },
-  
-  statIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Theme.spacing.sm,
-  },
-  
-  statContent: {
-    flex: 1,
-  },
 
-  statValue: {
-    letterSpacing: -0.5,
-  },
-  
-  statLabel: {
-    opacity: 0.8,
-    marginTop: 3,
-    letterSpacing: 0.2,
-  },
-  
-  curvedBottom: {
-    height: 24,
-    marginTop: -24,
+  headerBackground: {
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 16,
+    paddingBottom: 16,
     overflow: 'hidden',
-  },
-  
-  curvedGradient: {
-    height: 48,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
   },
+
+  landscapeContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+
+  container: {
+    zIndex: 1,
+  },
+
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Theme.spacing.lg,
+    marginBottom: Theme.spacing.lg,
+  },
+
+  topRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 60,
+  },
+
+  topRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    width: 60,
+    gap: 8,
+  },
+
+  titleText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  dateStrip: {
+    paddingHorizontal: Theme.spacing.md,
+    gap: 4,
+  },
+
+  dateItem: {
+    width: DATE_ITEM_WIDTH,
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+
+  dateItemSelected: {},
+
+  dayName: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+
+  dateCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  dateCircleSelected: {
+    backgroundColor: '#FFFFFF',
+  },
+
+  dateNumber: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
 });

@@ -17,13 +17,14 @@ export type HabitCardProps = {
   habit: Habit;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  disabled?: boolean;
 };
 
 function isCompletedToday(habit: Habit): boolean {
   return checkIsCompletedToday(habit.lastCompletedOn);
 }
 
-export default function HabitCard({ habit, onToggle, onDelete }: HabitCardProps) {
+export default function HabitCard({ habit, onToggle, onDelete, disabled = false }: HabitCardProps) {
   const { colors, isDark } = useTheme();
   const completed = isCompletedToday(habit);
   const [isToggling, setIsToggling] = React.useState(false);
@@ -47,7 +48,7 @@ export default function HabitCard({ habit, onToggle, onDelete }: HabitCardProps)
   }, [completed]);
 
   const handleToggle = React.useCallback(() => {
-    if (isToggling) return;
+    if (disabled || isToggling) return;
     setIsToggling(true);
     scale.value = withSpring(0.97, { damping: 15, stiffness: 400 });
     scale.value = withSpring(1, { damping: 12, stiffness: 300 });

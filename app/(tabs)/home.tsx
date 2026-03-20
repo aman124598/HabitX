@@ -11,7 +11,7 @@ import { ThemedView, ThemedText, ThemedCard } from '../../components/Themed';
 import { useHabits } from '../../hooks/useHabits';
 import { useAuth } from '../../lib/authContext';
 import { useTheme } from '../../lib/themeContext';
-import { getGreeting, calculateCurrentStreak, calculateSuccessRate, isCompletedToday } from '../../lib/habitStats';
+import { getGreeting, calculateCurrentStreak, calculateSuccessRate, isCompletedToday, getToday } from '../../lib/habitStats';
 import Theme, { getShadow } from '../../lib/theme';
 import EditProfileModal from '../../components/settings/EditProfileModal';
 import { UserAvatar } from '../../components/UserAvatar';
@@ -26,6 +26,7 @@ export default function HomeTab() {
   const [showProfile, setShowProfile] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const scaleAnim = useSharedValue(1);
 
   // Load locally-stored avatar
@@ -41,7 +42,20 @@ export default function HomeTab() {
   // Use today's completion percentage in the header so the displayed
   // 'Success Rate' matches the counts shown elsewhere on the screen.
   const todaySuccessRate = calculateSuccessRate(habits);
-  const completedToday = habits.filter(h => isCompletedToday(h)).length;
+
+  // Format selected date to YYYY-MM-DD for comparison
+  const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+  const todayStr = getToday();
+  const isSelectedToday = selectedDateStr === todayStr;
+  const isFutureDate = selectedDateStr > todayStr;
+
+  // Future dates: no habits to show. Past/today: show habits created on or before that date.
+  const filteredHabits = isFutureDate ? [] : habits.filter(h => {
+    const startDate = h.startDate || h.createdAt?.split('T')[0];
+    return startDate <= selectedDateStr;
+  });
+
+  const completedOnDate = filteredHabits.filter(h => h.lastCompletedOn === selectedDateStr).length;
 
   // Add subtle animation when stats change
   useEffect(() => {
@@ -77,6 +91,8 @@ export default function HomeTab() {
           subtitle={subtitle}
           currentStreak={currentStreak}
           successRate={todaySuccessRate}
+          selectedDate={selectedDate}
+          onDateSelect={setSelectedDate}
           onProfile={() => {
             setShowProfile(true);
           }}
@@ -96,7 +112,7 @@ export default function HomeTab() {
         />
 
         {/* Habits Section */}
-        {habits.length > 0 && (
+        {filteredHabits.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
               <ThemedText
@@ -104,14 +120,14 @@ export default function HomeTab() {
                 size="xl"
                 weight="bold"
               >
-                Today's Habits
+                {isSelectedToday ? "Today's Habits" : `${selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
               </ThemedText>
               <ThemedText
                 variant="secondary"
                 size="base"
                 style={styles.progressText}
               >
-                {completedToday}/{habits.length} completed
+                {completedOnDate}/{filteredHabits.length} completed
               </ThemedText>
               <Pressable
                 onPress={handleCreateHabit}
@@ -134,12 +150,13 @@ export default function HomeTab() {
               </ThemedView>
             )}
 
-            {!loading && habits.map(habit => (
+            {!loading && filteredHabits.map(habit => (
               <HabitCard
                 key={habit.id}
                 habit={habit}
-                onToggle={toggleHabit}
+                onToggle={isSelectedToday ? toggleHabit : () => {}}
                 onDelete={confirmDelete}
+                disabled={!isSelectedToday}
               />
             ))}
 
@@ -147,8 +164,20 @@ export default function HomeTab() {
         )}
 
         {/* Empty State */}
-        {!loading && habits.length === 0 && !showAdd && (
-          <EmptyState onCreateHabit={handleCreateHabit} />
+        {!loading && filteredHabits.length === 0 && !showAdd && (
+          isFutureDate ? (
+            <View style={styles.futureMessage}>
+              <Ionicons name="calendar-outline" size={48} color={colors.text.tertiary} />
+              <ThemedText variant="tertiary" size="lg" weight="semibold" style={{ marginTop: 12, textAlign: 'center' }}>
+                Future date
+              </ThemedText>
+              <ThemedText variant="tertiary" size="sm" style={{ marginTop: 4, textAlign: 'center' }}>
+                Habits will appear here when this day arrives
+              </ThemedText>
+            </View>
+          ) : (
+            <EmptyState onCreateHabit={handleCreateHabit} />
+          )
         )}
       </ScrollView>
 
@@ -303,5 +332,11 @@ const styles = StyleSheet.create({
   },
   memberSince: {
     marginTop: Theme.spacing.xs,
+  },
+  futureMessage: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Theme.spacing.xxxxl,
+    paddingHorizontal: Theme.spacing.xl,
   },
 });
