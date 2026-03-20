@@ -154,7 +154,7 @@ export default function HomeTab() {
               <HabitCard
                 key={habit.id}
                 habit={habit}
-                onToggle={isSelectedToday ? toggleHabit : () => {}}
+                onToggle={isSelectedToday ? toggleHabit : () => { }}
                 onDelete={confirmDelete}
                 disabled={!isSelectedToday}
               />
