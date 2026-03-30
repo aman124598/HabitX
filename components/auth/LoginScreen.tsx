@@ -34,7 +34,10 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
   const { signIn, setActive, isLoaded } = useSignIn();
   const { colors } = useTheme();
 
-  const isLoading = !isLoaded;
+  // Separate submitting state from Clerk's load state.
+  // Buttons should not be permanently disabled just because Clerk is still initialising.
+  const [submitting, setSubmitting] = useState(false);
+  const isLoading = submitting;
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -71,17 +74,29 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    
-    if (!isLoaded) return;
+
+    if (!isLoaded || !signIn) {
+      Alert.alert('Error', 'Authentication is still loading. Please wait a moment.');
+      return;
+    }
 
     try {
+      setSubmitting(true);
       const completeSignIn = await signIn.create({
         identifier: email.trim(),
         password,
       });
       await setActive({ session: completeSignIn.createdSessionId });
     } catch (error: any) {
-      Alert.alert('Login Failed', error.errors?.[0]?.message || error.message || 'Something went wrong');
+      Alert.alert(
+        'Login Failed',
+        error.errors?.[0]?.longMessage ||
+        error.errors?.[0]?.message ||
+        error.message ||
+        'Something went wrong. Please check your credentials.'
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 

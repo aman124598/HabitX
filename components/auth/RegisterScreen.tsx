@@ -44,7 +44,9 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
   const { markAsNewUser } = useTutorial();
   const { colors } = useTheme();
 
-  const isLoading = !isLoaded;
+  // Separate submitting state so buttons aren't permanently disabled
+  const [submitting, setSubmitting] = useState(false);
+  const isLoading = submitting;
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -82,8 +84,8 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
+    if (password.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters long');
       return;
     }
 
@@ -92,9 +94,13 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
       return;
     }
 
-    if (!isLoaded) return;
+    if (!isLoaded || !signUp) {
+      Alert.alert('Error', 'Authentication is still loading. Please wait a moment.');
+      return;
+    }
 
     try {
+      setSubmitting(true);
       await signUp.create({
         username: username.trim(),
         emailAddress: email.trim(),
@@ -104,30 +110,44 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
     } catch (error: any) {
-       Alert.alert('Registration Failed', error.errors?.[0]?.message || error.message || 'Something went wrong');
+      // Log full Clerk error for debugging
+      console.error('🔴 Clerk sign-up error:', JSON.stringify(error?.errors || error, null, 2));
+      const clerkMsg = error.errors?.[0]?.longMessage || error.errors?.[0]?.message;
+      const code = error.errors?.[0]?.code;
+      console.error('🔴 Error code:', code, '| Message:', clerkMsg);
+      Alert.alert(
+        'Registration Failed',
+        clerkMsg || error.message || 'Something went wrong'
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const onPressVerify = async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || !signUp) return;
 
     try {
+      setSubmitting(true);
       const completeSignUp = await signUp.attemptEmailAddressVerification({
         code,
       });
 
       if (completeSignUp.status === 'complete') {
-        // Here we could call our backend to persist the user, 
-        // but Clerk already manages them. Once setActive runs, the app layout will 
-        // transition to the authenticated screens.
         await setActive({ session: completeSignUp.createdSessionId });
       } else {
-        console.error(JSON.stringify(completeSignUp, null, 2));
-        Alert.alert('Verification Failed', 'Invalid code or something went wrong');
+        Alert.alert('Verification Failed', 'Invalid code or something went wrong. Please try again.');
       }
     } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2));
-      Alert.alert('Verification Failed', err.errors?.[0]?.message || err.message || 'Something went wrong');
+      Alert.alert(
+        'Verification Failed',
+        err.errors?.[0]?.longMessage ||
+        err.errors?.[0]?.message ||
+        err.message ||
+        'Something went wrong'
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -336,6 +356,12 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Clerk CAPTCHA mount point – invisible container, required for web bot protection */}
+            <View
+              nativeID="clerk-captcha"
+              style={{ height: Platform.OS === 'web' ? undefined : 0, overflow: 'hidden' }}
+            />
 
             {/* Register Button */}
             <TouchableOpacity
