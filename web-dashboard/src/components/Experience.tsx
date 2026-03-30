@@ -192,9 +192,24 @@ export default function Experience() {
                <div className="flex items-center gap-2">
                    <span className="font-bold text-xl tracking-tighter">Habit<span className="text-red-600">X</span></span>
                </div>
-               <p className="text-gray-600 text-sm">© {new Date().getFullYear()} HabitX. Built with ❤️ by Aman.</p>
+               
+               <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+                 <p className="text-gray-600 text-sm">© {new Date().getFullYear()} HabitX. Built with ❤️ by Aman.</p>
+                 <a 
+                   href="/privacy" 
+                   onClick={(e) => {
+                     e.preventDefault();
+                     window.history.pushState({}, '', '/privacy');
+                     window.dispatchEvent(new PopStateEvent('popstate'));
+                   }}
+                   className="text-gray-500 hover:text-white text-sm transition-colors"
+                 >
+                   Privacy Policy
+                 </a>
+               </div>
+
                <div className="flex gap-6">
-                   <a href="https://github.com/aman124598/HabitX" className="text-gray-500 hover:text-white transition-colors">
+                   <a href="https://github.com/aman124598/HabitX" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-colors">
                        <Github size={20} />
                    </a>
                </div>
