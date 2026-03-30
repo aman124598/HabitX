@@ -246,6 +246,64 @@ class AuthService {
     }
   }
 
+  async loginWithGoogle(idToken: string): Promise<User> {
+    try {
+      const { signInWithGoogle, getCurrentIdToken } = await import('./firebase');
+      const userCredential = await signInWithGoogle(idToken);
+      const firebaseUser = userCredential.user;
+      const firebaseIdToken = await getCurrentIdToken(true);
+
+      if (!firebaseIdToken) {
+        throw new Error('Failed to get Firebase ID token');
+      }
+
+      const url = getApiUrl('/auth/google-login');
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+          'Authorization': `Bearer ${firebaseIdToken}`,
+        },
+        body: JSON.stringify({
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+          photoURL: firebaseUser.photoURL,
+          firebaseUid: firebaseUser.uid,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Google login failed with status ${response.status}`);
+      }
+
+      const data: AuthResponse = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Google login failed');
+      }
+
+      await AsyncStorage.setItem(TOKEN_KEY, data.data.token);
+      await AsyncStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
+      
+      this.token = data.data.token;
+      this.user = data.data.user;
+
+      await AsyncStorage.removeItem('pending_registration');
+
+      return data.data.user;
+    } catch (error) {
+      console.error('Google login error details:', error);
+      
+      if (error instanceof TypeError && error.message.includes('Network request failed')) {
+        throw new Error('Network error: Unable to connect to server. Please check your internet connection.');
+      }
+      
+      throw error;
+    }
+  }
+
   async register(credentials: RegisterCredentials): Promise<User> {
     try {
       // 1) Create Firebase user (this also signs the user in on the client)

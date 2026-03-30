@@ -6,6 +6,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -74,6 +75,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(userData);
     } catch (error) {
       console.error('Login error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async (idToken: string) => {
+    try {
+      setIsLoading(true);
+      const userData = await authService.loginWithGoogle(idToken);
+      setUser(userData);
+    } catch (error) {
+      console.error('Google login error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -199,6 +213,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: !!user,
     isLoading,
     login,
+    loginWithGoogle,
     register,
     logout,
     refreshUser,

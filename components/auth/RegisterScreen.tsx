@@ -14,8 +14,12 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { useAuth } from '../../lib/authContext';
 import { useTheme } from '../../lib/themeContext';
+
+WebBrowser.maybeCompleteAuthSession();
 import { useTutorial } from '../../lib/tutorialContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -32,9 +36,32 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  const { register, isLoading } = useAuth();
+  const { register, loginWithGoogle, isLoading } = useAuth();
   const { markAsNewUser } = useTutorial();
   const { colors } = useTheme();
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID',
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'YOUR_IOS_CLIENT_ID',
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'YOUR_ANDROID_CLIENT_ID',
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      if (id_token) {
+        handleGoogleLogin(id_token);
+      }
+    }
+  }, [response]);
+
+  const handleGoogleLogin = async (idToken: string) => {
+    try {
+      await loginWithGoogle(idToken);
+    } catch (error: any) {
+      Alert.alert('Google Auth Failed', error.message || 'Something went wrong');
+    }
+  };
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const insets = useSafeAreaInsets();
@@ -298,6 +325,24 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
               )}
             </TouchableOpacity>
 
+            {/* Google Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Google Registration Button */}
+            <TouchableOpacity
+              style={[styles.googleButton, (!request || isLoading) && styles.disabledButton]}
+              onPress={() => promptAsync()}
+              disabled={!request || isLoading}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-google" size={18} color="#000000" />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </TouchableOpacity>
+
             {/* Footer */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have an account?</Text>
@@ -448,6 +493,41 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#2A2A2A',
+  },
+  dividerText: {
+    color: '#6B7280',
+    paddingHorizontal: 16,
+    fontSize: 14,
+    textTransform: 'uppercase',
+  },
+  googleButton: {
+    marginBottom: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#333333',
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    gap: 10,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: 0.5,
   },
   disabledButton: {
     opacity: 0.6,
