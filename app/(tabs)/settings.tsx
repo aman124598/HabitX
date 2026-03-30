@@ -12,6 +12,7 @@ import SafeNotifications from '../../lib/safeNotifications';
 import { ThemedView, ThemedText, ThemedDivider } from "../../components/Themed";
 import { useHabits } from "../../hooks/useHabits";
 import { useAuth } from "../../lib/authContext";
+import { useAuth as useClerkAuth } from "@clerk/clerk-expo";
 import { useTheme } from "../../lib/themeContext";
 import { useTutorial } from "../../lib/tutorialContext";
 import { Theme } from "../../lib/theme";
@@ -125,7 +126,8 @@ function SettingsCard({ children }: { children: React.ReactNode }) {
 export default function SettingsTab() {
   const { colors, themeMode, setThemeMode, isDark } = useTheme();
   const { habits, refresh, clearAllHabits } = useHabits();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { signOut } = useClerkAuth();
   const { setHasSeenTutorial } = useTutorial();
   const router = useRouter();
 
@@ -460,7 +462,7 @@ export default function SettingsTab() {
                   text: 'Sign Out',
                   onPress: async () => {
                     try {
-                      await logout();
+                      await signOut();
                     } catch (error) {
                       Alert.alert('Sign Out Failed', 'Please try again.');
                     }

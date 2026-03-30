@@ -3,7 +3,6 @@ import { body } from 'express-validator';
 import {
   register,
   login,
-  googleLogin,
   getMe,
   updateProfile,
   changePassword,
@@ -115,7 +114,6 @@ const resetPasswordValidation = [
 // Routes
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
-router.post('/google-login', googleLogin); // No validation needed, handled in controller
 router.get('/me', authenticateToken, getMe);
 router.put('/profile', authenticateToken, updateProfileValidation, validate, updateProfile);
 router.put('/password', authenticateToken, changePasswordValidation, validate, changePassword);

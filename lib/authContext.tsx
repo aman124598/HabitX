@@ -1,236 +1,146 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import authService, { User, LoginCredentials, RegisterCredentials, UpdateProfileCredentials } from './auth';
+/**
+ * authContext.tsx
+ *
+ * Bridges Clerk (the auth provider) with the rest of the app.
+ * - Registers a Clerk token getter so all API services can attach tokens.
+ * - Keeps a local `User` in state (fetched from MongoDB via /auth/me).
+ * - Exposes helpers the UI still needs: updateProfile, forgotPassword, etc.
+ */
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  ReactNode,
+} from 'react';
+import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
+import {
+  registerClerkTokenGetter,
+  fetchMe,
+  updateProfileApi,
+  User,
+  UpdateProfileCredentials,
+} from './auth';
+import { getApiUrl } from './config';
 
+// ---------------------------------------------------------------------------
+// Context shape
+// ---------------------------------------------------------------------------
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  loginWithGoogle: (idToken: string) => Promise<void>;
-  register: (credentials: RegisterCredentials) => Promise<User>;
-  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateProfile: (credentials: UpdateProfileCredentials) => Promise<void>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message: string }>;
-  resetPassword: (oobCode: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
-  verifyEmail: (email: string, token: string) => Promise<User>;
-  resendVerificationEmail: (email: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+// ---------------------------------------------------------------------------
+// Provider
+// ---------------------------------------------------------------------------
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const { isLoaded, isSignedIn, getToken, signOut } = useClerkAuth();
+  const { user: clerkUser } = useClerkUser();
 
-export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Register the Clerk token getter so API services can use it globally.
   useEffect(() => {
-    initializeAuth();
-  }, []);
+    registerClerkTokenGetter(() => getToken());
+  }, [getToken]);
 
-  const initializeAuth = async () => {
-    try {
-      setIsLoading(true);
-      const hasStoredAuth = await authService.init();
-      
-      if (hasStoredAuth) {
-        const cachedUser = authService.getCurrentUser();
-        if (cachedUser) {
-          setUser(cachedUser);
+  // When Clerk finishes loading and user is signed in, fetch MongoDB profile.
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    fetchMe()
+      .then(setUser)
+      .catch((err) => {
+        console.warn('Could not fetch user profile from DB:', err.message);
+        // Construct a minimal User from Clerk data so the app isn't broken
+        // while the backend auto-creates the DB record on next API call.
+        if (clerkUser) {
+          setUser({
+            id: clerkUser.id,
+            username:
+              clerkUser.username ||
+              clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] ||
+              'user',
+            email: clerkUser.primaryEmailAddress?.emailAddress || '',
+            createdAt: clerkUser.createdAt?.toISOString() || new Date().toISOString(),
+            updatedAt: clerkUser.updatedAt?.toISOString() || new Date().toISOString(),
+          });
         }
+      })
+      .finally(() => setIsLoading(false));
+  }, [isLoaded, isSignedIn, clerkUser]);
 
-        // Try to refresh user data from server
-        try {
-          const userData = await authService.getMe();
-          if (userData) {
-            setUser(userData);
-          }
-        } catch (error: any) {
-          if (error?.status === 401) {
-            // Token is invalid, clear stored auth
-            console.log('Token expired or invalid, clearing auth');
-            await authService.logout();
-            setUser(null);
-          } else {
-            // Keep cached user when refresh fails for non-auth reasons (e.g. network).
-            console.log('Could not refresh auth user, keeping cached session');
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Auth initialization error:', error);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const login = async (credentials: LoginCredentials) => {
+  const refreshUser = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const userData = await authService.login(credentials);
-      setUser(userData);
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loginWithGoogle = async (idToken: string) => {
-    try {
-      setIsLoading(true);
-      const userData = await authService.loginWithGoogle(idToken);
-      setUser(userData);
-    } catch (error) {
-      console.error('Google login error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const register = async (credentials: RegisterCredentials) => {
-    try {
-      setIsLoading(true);
-      const userData = await authService.register(credentials);
-      
-      // NEW FLOW: Registration only creates Firebase user and sends verification email
-      // User is NOT logged in or added to MongoDB until they verify their email
-      // So we do NOT set user here or initialize gamification
-      
-      console.log('✅ Firebase user created, verification email sent. Waiting for user to verify.');
-      
-      // Return placeholder user data (registration successful but not yet verified)
-      return userData;
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      setIsLoading(true);
-      // Clear UI state immediately, then run async cleanup.
-      setUser(null);
-      await authService.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Local state is already cleared.
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const refreshUser = async () => {
-    try {
-      const userData = await authService.getMe();
+      const userData = await fetchMe();
       setUser(userData);
     } catch (error) {
       console.error('Refresh user error:', error);
-      // If refresh fails, user might be logged out
-      await logout();
     }
-  };
+  }, []);
 
-  const updateProfile = async (credentials: UpdateProfileCredentials) => {
-    try {
+  const updateProfile = useCallback(
+    async (credentials: UpdateProfileCredentials) => {
       setIsLoading(true);
-      const userData = await authService.updateProfile(credentials);
-      setUser(userData);
-    } catch (error) {
-      console.error('Update profile error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      try {
+        const userData = await updateProfileApi(credentials);
+        setUser(userData);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
-  const forgotPassword = async (email: string) => {
-    try {
-      setIsLoading(true);
-      const result = await authService.forgotPassword(email);
-      return result;
-    } catch (error) {
-      console.error('Forgot password error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetPassword = async (oobCode: string, newPassword: string) => {
-    try {
-      setIsLoading(true);
-      const result = await authService.resetPassword(oobCode, newPassword);
-      return result;
-    } catch (error) {
-      console.error('Reset password error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const verifyEmail = async (email: string, token: string) => {
-    try {
-      setIsLoading(true);
-      const user = await authService.verifyEmail(email, token);
-      
-      // After successful verification, user is now synced to MongoDB
-      setUser(user);
-      
-      console.log('✅ User verified and logged in:', user.username);
-      return user;
-    } catch (error) {
-      console.error('Verify email error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resendVerificationEmail = async (email: string) => {
-    try {
-      const result = await authService.resendVerificationEmail(email);
-      return result;
-    } catch (error) {
-      console.error('Resend verification error:', error);
-      throw error;
-    }
-  };
+  const forgotPassword = useCallback(
+    async (email: string): Promise<{ success: boolean; message: string }> => {
+      // Clerk handles password reset via its own email flow.
+      // We call the Clerk backend API here directly.
+      const response = await fetch(getApiUrl('/auth/forgot-password'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to send password reset email');
+      }
+      return { success: true, message: 'Password reset email sent. Please check your inbox.' };
+    },
+    []
+  );
 
   const value: AuthContextType = {
     user,
-    isAuthenticated: !!user,
-    isLoading,
-    login,
-    loginWithGoogle,
-    register,
-    logout,
+    isAuthenticated: !!user && !!isSignedIn,
+    isLoading: !isLoaded || isLoading,
     refreshUser,
     updateProfile,
     forgotPassword,
-    resetPassword,
-    verifyEmail,
-    resendVerificationEmail,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (context === undefined) {

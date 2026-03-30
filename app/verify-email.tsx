@@ -3,66 +3,28 @@ import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'rea
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { applyFirebaseAction } from '../lib/firebase';
-import authService from '../lib/auth';
-import { useAuth } from '../lib/authContext';
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { refreshUser } = useAuth();
   const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    // Clerk handles email verification inline via OTP in the RegisterScreen.
+    // This route exists for backward-compatibility (Firebase deep links).
+    // We simply inform the user and redirect them to log in.
     const oobCode = (params as any)?.oobCode || (params as any)?.token;
     if (!oobCode) {
-      setMessage('Invalid verification link.');
+      setMessage('Invalid verification link. Please return to the app and sign in or register again.');
       setStatus('error');
       return;
     }
-
-    (async () => {
-      try {
-        setStatus('verifying');
-        console.log('🔐 Step 1: Applying Firebase email verification code...');
-        
-        // Step 1: Apply the action code (mark email as verified in Firebase)
-        await applyFirebaseAction(oobCode as string);
-        console.log('✅ Firebase email verified');
-
-        // Step 2: Complete MongoDB registration (backend will check Firebase emailVerified status)
-        console.log('🔐 Step 2: Syncing user to MongoDB...');
-        
-        try {
-          const user = await authService.verifyEmail('', oobCode as string);
-          console.log('✅ User synced to MongoDB:', user);
-          
-          // Refresh auth context
-          await refreshUser();
-          
-          setStatus('success');
-          setMessage('Your email has been verified successfully! You can now log in.');
-        } catch (syncError: any) {
-          console.error('❌ MongoDB sync error:', syncError);
-          setStatus('error');
-          
-          // Check if it's a "no pending registration" error
-          if (syncError?.message?.includes('No pending registration')) {
-            setMessage('Email verified! Please log in with your credentials to complete setup.');
-          } else if (syncError?.message?.includes('No Firebase session')) {
-            setMessage('Email verified! Please log in with your credentials to complete setup.');
-          } else {
-            setMessage(syncError?.message || 'Email verified in Firebase. Please log in to complete registration.');
-          }
-        }
-      } catch (err: any) {
-        console.error('❌ Verify link error:', err);
-        setStatus('error');
-        setMessage(err?.message || 'Verification failed. The link may be invalid or expired.');
-      }
-    })();
+    setStatus('success');
+    setMessage('Your email was verified. Please open the app and sign in.');
   }, [params]);
+
+
 
   return (
     <View style={styles.container}>

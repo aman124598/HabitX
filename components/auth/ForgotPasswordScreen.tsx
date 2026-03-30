@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../lib/themeContext';
-import authService from '../../lib/auth';
+import { useSignIn } from '@clerk/clerk-expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ForgotPasswordScreenProps {
@@ -31,6 +31,7 @@ export default function ForgotPasswordScreen({ onBackToLogin, onSwitchToResetPas
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const { colors } = useTheme();
+  const { signIn, isLoaded } = useSignIn();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const insets = useSafeAreaInsets();
@@ -64,11 +65,16 @@ export default function ForgotPasswordScreen({ onBackToLogin, onSwitchToResetPas
 
     try {
       setIsLoading(true);
-      const result = await authService.forgotPassword(email.trim());
+      if (!isLoaded) return;
+      // Clerk: request a password reset email code
+      await signIn!.create({
+        strategy: 'reset_password_email_code',
+        identifier: email.trim(),
+      });
       setIsEmailSent(true);
-      Alert.alert('Success', result.message || 'Password reset email sent! Please check your inbox.');
+      Alert.alert('Email Sent!', 'A password reset code has been sent to your email. Enter it in the next step.');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send reset email');
+      Alert.alert('Error', error.errors?.[0]?.message || error.message || 'Failed to send reset email');
     } finally {
       setIsLoading(false);
     }

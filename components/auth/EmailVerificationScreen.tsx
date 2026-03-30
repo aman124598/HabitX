@@ -13,9 +13,8 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute } from '@react-navigation/native';
 import { useTheme } from '../../lib/themeContext';
-import authService from '../../lib/auth';
+import { useSignUp } from '@clerk/clerk-expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface EmailVerificationScreenProps {
@@ -38,18 +37,12 @@ export default function EmailVerificationScreen({
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const route = useRoute();
+  const { signUp, setActive, isLoaded } = useSignUp();
 
-  // Get email from route params if not passed as prop
-  const email = userEmail || (route.params as any)?.email || '';
-  const token = (route.params as any)?.token || '';
+  // email is passed as prop – no route needed for Clerk flow
+  const email = userEmail;
 
-  useEffect(() => {
-    // If we have a token in route params, auto-verify
-    if (token && email) {
-      handleAutoVerify();
-    }
-  }, [token, email]);
+  // No auto-verify needed: Clerk OTP must be entered by user
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -79,50 +72,45 @@ export default function EmailVerificationScreen({
   }, []);
 
   const handleAutoVerify = async () => {
-    try {
-      setIsLoading(true);
-      const user = await authService.verifyEmail(email, token);
-      setIsVerified(true);
-      if (onVerified) {
-        setTimeout(() => onVerified(), 2000);
-      }
-    } catch (error: any) {
-      Alert.alert('Verification Error', error.message || 'Failed to verify email');
-    } finally {
-      setIsLoading(false);
-    }
+    // Not needed for Clerk flow
   };
 
   const handleVerifyEmail = async () => {
     if (!verificationCode.trim()) {
-      Alert.alert('Error', 'Please enter your verification token');
+      Alert.alert('Error', 'Please enter your verification code');
       return;
     }
-
+    if (!isLoaded || !signUp) return;
     try {
       setIsLoading(true);
-      const user = await authService.verifyEmail(email, verificationCode.trim());
-      setIsVerified(true);
-      Alert.alert('Success', 'Email verified successfully!');
-      if (onVerified) {
-        setTimeout(() => onVerified(), 1000);
+      const result = await signUp.attemptEmailAddressVerification({
+        code: verificationCode.trim(),
+      });
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        setIsVerified(true);
+        Alert.alert('Success', 'Email verified successfully!');
+        if (onVerified) setTimeout(() => onVerified!(), 1000);
+      } else {
+        Alert.alert('Verification Error', 'Code is incorrect or expired. Please try again.');
       }
     } catch (error: any) {
-      Alert.alert('Verification Error', error.message || 'Failed to verify email');
+      Alert.alert('Verification Error', error.errors?.[0]?.message || error.message || 'Failed to verify email');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleResendEmail = async () => {
+    if (!isLoaded || !signUp) return;
     try {
       setIsLoading(true);
-      const result = await authService.resendVerificationEmail(email);
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setResendDisabled(true);
       setResendCountdown(60);
-      Alert.alert('Success', result.message || 'Verification email sent! Check your inbox.');
+      Alert.alert('Success', 'Verification code sent! Check your inbox.');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to resend verification email');
+      Alert.alert('Error', error.errors?.[0]?.message || error.message || 'Failed to resend code');
     } finally {
       setIsLoading(false);
     }

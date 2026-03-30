@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useAuth } from '../lib/authContext';
+import { useSignIn } from '@clerk/clerk-expo';
 import { useTheme } from '../lib/themeContext';
 import Theme from '../lib/theme';
 
 export default function ResetPasswordScreen() {
   const { oobCode } = useLocalSearchParams<{ oobCode: string }>();
-  const { resetPassword } = useAuth();
+  const { signIn, isLoaded } = useSignIn();
   const { colors } = useTheme();
   const router = useRouter();
   const [newPassword, setNewPassword] = useState('');
@@ -25,7 +25,6 @@ export default function ResetPasswordScreen() {
   const handleResetPassword = async () => {
     setError(null);
 
-    // Validation
     if (!newPassword || !confirmPassword) {
       setError('Please fill in all fields');
       return;
@@ -41,26 +40,28 @@ export default function ResetPasswordScreen() {
       return;
     }
 
-    if (!oobCode) {
+    if (!oobCode || !isLoaded) {
       setError('Invalid password reset link');
       return;
     }
 
     try {
       setLoading(true);
-      await resetPassword(oobCode, newPassword);
+      // Clerk password reset: attempt with the reset code from the email
+      await signIn.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code: oobCode,
+        password: newPassword,
+      });
       setSuccess(true);
-
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
+      setTimeout(() => { router.push('/'); }, 2000);
     } catch (err: any) {
       console.error('Password reset error:', err);
-      setError(err.message || 'Failed to reset password. Please try again.');
+      setError(err.errors?.[0]?.message || err.message || 'Failed to reset password. Please try again.');
       setLoading(false);
     }
   };
+
 
   if (!oobCode) {
     return (

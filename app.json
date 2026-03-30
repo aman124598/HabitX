@@ -84,7 +84,8 @@
           "photosPermission": "Allow Habit X to access your photos to set a profile picture.",
           "cameraPermission": "Allow Habit X to use the camera to take a profile picture."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "router": {

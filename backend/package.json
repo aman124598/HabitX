@@ -13,6 +13,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@clerk/clerk-sdk-node": "^4.13.23",
     "@sendgrid/mail": "^7.7.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",

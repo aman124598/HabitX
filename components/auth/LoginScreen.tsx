@@ -15,12 +15,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import { useAuth } from '../../lib/authContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../lib/themeContext';
+import { useSignIn } from '@clerk/clerk-expo';
 
 WebBrowser.maybeCompleteAuthSession();
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface LoginScreenProps {
   onSwitchToRegister: () => void;
@@ -32,31 +31,11 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  const { login, loginWithGoogle, isLoading } = useAuth();
+  const { signIn, setActive, isLoaded } = useSignIn();
   const { colors } = useTheme();
 
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID',
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'YOUR_IOS_CLIENT_ID',
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'YOUR_ANDROID_CLIENT_ID',
-  });
+  const isLoading = !isLoaded;
 
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      if (id_token) {
-        handleGoogleLogin(id_token);
-      }
-    }
-  }, [response]);
-
-  const handleGoogleLogin = async (idToken: string) => {
-    try {
-      await loginWithGoogle(idToken);
-    } catch (error: any) {
-      Alert.alert('Google Login Failed', error.message || 'Something went wrong');
-    }
-  };
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const insets = useSafeAreaInsets();
@@ -92,11 +71,17 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
+    
+    if (!isLoaded) return;
 
     try {
-      await login({ email: email.trim(), password });
+      const completeSignIn = await signIn.create({
+        identifier: email.trim(),
+        password,
+      });
+      await setActive({ session: completeSignIn.createdSessionId });
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Something went wrong');
+      Alert.alert('Login Failed', error.errors?.[0]?.message || error.message || 'Something went wrong');
     }
   };
 
@@ -237,24 +222,6 @@ export default function LoginScreen({ onSwitchToRegister, onSwitchToForgotPasswo
                   </View>
                 </>
               )}
-            </TouchableOpacity>
-
-            {/* Google Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google Login Button */}
-            <TouchableOpacity
-              style={[styles.googleButton, (!request || isLoading) && styles.disabledButton]}
-              onPress={() => promptAsync()}
-              disabled={!request || isLoading}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="logo-google" size={18} color="#000000" />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
             </TouchableOpacity>
 
             {/* Footer */}

@@ -14,9 +14,8 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute } from '@react-navigation/native';
 import { useTheme } from '../../lib/themeContext';
-import authService from '../../lib/auth';
+import { useSignIn } from '@clerk/clerk-expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ResetPasswordScreenProps {
@@ -34,7 +33,7 @@ export default function ResetPasswordScreen({ onBackToLogin, email: propEmail, r
   const [isReset, setIsReset] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const { colors } = useTheme();
-  const route = useRoute();
+  const { signIn, isLoaded } = useSignIn();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const insets = useSafeAreaInsets();
@@ -60,9 +59,9 @@ export default function ResetPasswordScreen({ onBackToLogin, email: propEmail, r
     return base;
   }, [keyboardHeight, insets?.bottom]);
 
-  // Get token and email from props first, then fallback to route params
-  const token = propResetToken || (route.params as any)?.token || '';
-  const email = propEmail || (route.params as any)?.email || '';
+  // token comes from props (passed from ForgotPasswordScreen flow)
+  const token = propResetToken || '';
+  const email = propEmail || '';
 
   const handleResetPassword = async () => {
     if (!newPassword.trim() || !confirmPassword.trim()) {
@@ -82,14 +81,19 @@ export default function ResetPasswordScreen({ onBackToLogin, email: propEmail, r
 
     try {
       setIsLoading(true);
-      if (!token) {
+      if (!token || !isLoaded) {
         throw new Error('Missing reset code. Please use the link from your email again.');
       }
-      const result = await authService.resetPassword(token, newPassword);
+      // Clerk password reset via code from email
+      await signIn!.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code: token,
+        password: newPassword,
+      });
       setIsReset(true);
-      Alert.alert('Success', result.message || 'Password reset successfully! You can now login with your new password.');
+      Alert.alert('Success', 'Password reset successfully! You can now login with your new password.');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to reset password');
+      Alert.alert('Error', error.errors?.[0]?.message || error.message || 'Failed to reset password');
     } finally {
       setIsLoading(false);
     }

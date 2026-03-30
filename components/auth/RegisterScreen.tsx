@@ -15,13 +15,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import { useAuth } from '../../lib/authContext';
-import { useTheme } from '../../lib/themeContext';
-
-WebBrowser.maybeCompleteAuthSession();
 import { useTutorial } from '../../lib/tutorialContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../lib/themeContext';
+import { useSignUp } from '@clerk/clerk-expo';
+
+WebBrowser.maybeCompleteAuthSession();
+
 
 interface RegisterScreenProps {
   onSwitchToLogin: () => void;
@@ -36,32 +36,16 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  const { register, loginWithGoogle, isLoading } = useAuth();
+  
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [code, setCode] = useState('');
+
+  const { signUp, isLoaded, setActive } = useSignUp();
   const { markAsNewUser } = useTutorial();
   const { colors } = useTheme();
 
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID',
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'YOUR_IOS_CLIENT_ID',
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'YOUR_ANDROID_CLIENT_ID',
-  });
+  const isLoading = !isLoaded;
 
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      if (id_token) {
-        handleGoogleLogin(id_token);
-      }
-    }
-  }, [response]);
-
-  const handleGoogleLogin = async (idToken: string) => {
-    try {
-      await loginWithGoogle(idToken);
-    } catch (error: any) {
-      Alert.alert('Google Auth Failed', error.message || 'Something went wrong');
-    }
-  };
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const insets = useSafeAreaInsets();
@@ -108,31 +92,42 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
       return;
     }
 
+    if (!isLoaded) return;
+
     try {
-      await register({ 
-        username: username.trim(), 
-        email: email.trim(), 
-        password 
+      await signUp.create({
+        username: username.trim(),
+        emailAddress: email.trim(),
+        password,
       });
-      
-      Alert.alert(
-        'Verification Email Sent! 📧',
-        'Please check your inbox and click the verification link to complete your registration.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (onEmailVerificationNeeded) {
-                onEmailVerificationNeeded(email.trim());
-              } else {
-                onSwitchToLogin();
-              }
-            }
-          }
-        ]
-      );
+
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setPendingVerification(true);
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.message || 'Something went wrong');
+       Alert.alert('Registration Failed', error.errors?.[0]?.message || error.message || 'Something went wrong');
+    }
+  };
+
+  const onPressVerify = async () => {
+    if (!isLoaded) return;
+
+    try {
+      const completeSignUp = await signUp.attemptEmailAddressVerification({
+        code,
+      });
+
+      if (completeSignUp.status === 'complete') {
+        // Here we could call our backend to persist the user, 
+        // but Clerk already manages them. Once setActive runs, the app layout will 
+        // transition to the authenticated screens.
+        await setActive({ session: completeSignUp.createdSessionId });
+      } else {
+        console.error(JSON.stringify(completeSignUp, null, 2));
+        Alert.alert('Verification Failed', 'Invalid code or something went wrong');
+      }
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+      Alert.alert('Verification Failed', err.errors?.[0]?.message || err.message || 'Something went wrong');
     }
   };
 
@@ -140,6 +135,42 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
     styles.inputWrapper,
     focusedInput === inputName && styles.inputWrapperFocused,
   ];
+
+  if (pendingVerification) {
+    return (
+      <View style={[styles.container, { backgroundColor: '#0A0A0A', justifyContent: 'center', padding: 24 }]}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Verify Email</Text>
+          <Text style={styles.subtitle}>Enter the code sent to {email}</Text>
+          
+          <View style={styles.inputContainer}>
+            <View style={getInputStyle('code')}>
+              <TextInput
+                style={[styles.input, { paddingLeft: 16 }]}
+                value={code}
+                onChangeText={setCode}
+                placeholder="Confirmation Code"
+                placeholderTextColor="#6B7280"
+                keyboardType="number-pad"
+                onFocus={() => setFocusedInput('code')}
+                onBlur={() => setFocusedInput(null)}
+              />
+            </View>
+          </View>
+          
+          <TouchableOpacity
+            style={styles.registerButton}
+            onPress={onPressVerify}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.registerButtonText}>Verify Email</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+
 
   return (
     <KeyboardAvoidingView 
@@ -323,24 +354,6 @@ export default function RegisterScreen({ onSwitchToLogin, onEmailVerificationNee
                   </View>
                 </>
               )}
-            </TouchableOpacity>
-
-            {/* Google Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google Registration Button */}
-            <TouchableOpacity
-              style={[styles.googleButton, (!request || isLoading) && styles.disabledButton]}
-              onPress={() => promptAsync()}
-              disabled={!request || isLoading}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="logo-google" size={18} color="#000000" />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
             </TouchableOpacity>
 
             {/* Footer */}
