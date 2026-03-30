@@ -1,6 +1,6 @@
 {
   "name": "habit-tracker",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "private": true,
   "main": "expo-router/entry",
   "packageManager": "yarn@1.22.22",
