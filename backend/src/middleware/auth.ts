@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserRepository, IUser } from '../models/User';
-import { ClerkExpressRequireAuth, ClerkExpressWithAuth, StrictAuthProp } from '@clerk/clerk-sdk-node';
+import { ClerkExpressRequireAuth, ClerkExpressWithAuth, StrictAuthProp, clerkClient } from '@clerk/clerk-sdk-node';
 
 declare global {
   namespace Express {
@@ -28,12 +28,13 @@ export const authenticateToken = async (
       let user = await UserRepository.findByClerkId(clerkUserId);
 
       if (!user) {
-        // Auto-create user record on first authenticated request
-        const { users } = require('@clerk/clerk-sdk-node');
         try {
-          const clerkUser = await users.getUser(clerkUserId);
+          const clerkUser = await clerkClient.users.getUser(clerkUserId);
           const email = clerkUser.emailAddresses[0]?.emailAddress;
-          const username = clerkUser.username || email?.split('@')[0] || `user_${clerkUserId.substring(0, 6)}`;
+          const username = clerkUser.username || 
+                          clerkUser.firstName || 
+                          email?.split('@')[0] || 
+                          `user_${clerkUserId.substring(0, 6)}`;
 
           let uniqueUsername = username;
           let counter = 1;
@@ -53,6 +54,7 @@ export const authenticateToken = async (
           };
 
           user = await UserRepository.create(userPayload);
+          console.log(`✅ Auto-created user record for Clerk ID: ${clerkUserId}`);
         } catch (autoCreateErr) {
           console.error('Auto-create user failed:', autoCreateErr);
           return res.status(500).json({ success: false, error: 'Failed to sync user with database' });
@@ -90,11 +92,13 @@ export const optionalAuth = async (
       let user = await UserRepository.findByClerkId(clerkUserId);
 
       if (!user) {
-        const { users } = require('@clerk/clerk-sdk-node');
         try {
-          const clerkUser = await users.getUser(clerkUserId);
+          const clerkUser = await clerkClient.users.getUser(clerkUserId);
           const email = clerkUser.emailAddresses[0]?.emailAddress;
-          const username = clerkUser.username || email?.split('@')[0] || `user_${clerkUserId.substring(0, 6)}`;
+          const username = clerkUser.username || 
+                          clerkUser.firstName || 
+                          email?.split('@')[0] || 
+                          `user_${clerkUserId.substring(0, 6)}`;
 
           let uniqueUsername = username;
           let counter = 1;

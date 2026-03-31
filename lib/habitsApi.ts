@@ -1,6 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from './auth';
 import { getApiUrl } from './config';
 
+const HABITS_CACHE_KEY = '@habitx_habits_cache';
 export type Frequency = 'daily' | 'weekly' | 'custom';
 export type Category = 'Health' | 'Work' | 'Learning' | 'Lifestyle';
 
@@ -44,7 +46,41 @@ export interface HabitResponse {
 }
 
 class HabitsService {
-  async getHabits(): Promise<Habit[]> {
+  private async _getCachedHabits(): Promise<Habit[]> {
+    try {
+      const cached = await AsyncStorage.getItem(HABITS_CACHE_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private async _setCachedHabits(habits: Habit[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(HABITS_CACHE_KEY, JSON.stringify(habits));
+    } catch (error) {
+      console.error('Error caching habits:', error);
+    }
+  }
+
+  async getHabits(forceRefresh = false): Promise<Habit[]> {
+    // If not forcing refresh, return cached data first for instant UI
+    if (!forceRefresh) {
+      const cached = await this._getCachedHabits();
+      if (cached.length > 0) {
+        // Fetch in background to update cache
+        this.syncHabits().catch(() => {});
+        return cached;
+      }
+    }
+
+    return this.syncHabits();
+  }
+
+  /**
+   * Fetches habits from server and updates local cache
+   */
+  async syncHabits(): Promise<Habit[]> {
     try {
       const response = await authService.makeAuthenticatedRequest(getApiUrl('/habits'));
       
@@ -53,10 +89,16 @@ class HabitsService {
       }
 
       const data: HabitResponse = await response.json();
-      return Array.isArray(data.data) ? data.data : [];
+      const habits = Array.isArray(data.data) ? data.data : [];
+      
+      // Update local cache
+      await this._setCachedHabits(habits);
+      
+      return habits;
     } catch (error) {
-      console.error('Get habits error:', error);
-      throw error;
+      console.error('Sync habits error:', error);
+      // If sync fails, try to return whatever we have in cache
+      return this._getCachedHabits();
     }
   }
 
@@ -93,12 +135,15 @@ class HabitsService {
       }
 
       const responseText = await response.text();
-      console.log('📝 Raw response text:', responseText);
-      
       try {
         const data: HabitResponse = JSON.parse(responseText);
-        console.log('✅ Parsed habit response:', data);
-        return data.data as Habit;
+        const newHabit = data.data as Habit;
+        
+        // Update cache instantly
+        const current = await this._getCachedHabits();
+        await this._setCachedHabits([newHabit, ...current]);
+        
+        return newHabit;
       } catch (parseError) {
         console.error('❌ JSON parse error:', parseError);
         throw new Error('Invalid response format from server');
@@ -122,7 +167,13 @@ class HabitsService {
       }
 
       const data: HabitResponse = await response.json();
-      return data.data as Habit;
+      const updatedHabit = data.data as Habit;
+      
+      // Update cache
+      const current = await this._getCachedHabits();
+      await this._setCachedHabits(current.map(h => h.id === id ? updatedHabit : h));
+      
+      return updatedHabit;
     } catch (error) {
       console.error('Update habit error:', error);
       throw error;
@@ -139,6 +190,10 @@ class HabitsService {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to delete habit');
       }
+
+      // Update cache
+      const current = await this._getCachedHabits();
+      await this._setCachedHabits(current.filter(h => h.id !== id));
     } catch (error) {
       console.error('Delete habit error:', error);
       throw error;
@@ -179,9 +234,14 @@ class HabitsService {
       
       try {
         const data = JSON.parse(responseText);
-        console.log('✅ Parsed toggle response:', data);
+        const updatedHabit = data.data as Habit;
+
+        // Update cache
+        const current = await this._getCachedHabits();
+        await this._setCachedHabits(current.map(h => h.id === id ? updatedHabit : h));
+
         return {
-          habit: data.data as Habit,
+          habit: updatedHabit,
           xp: data.xp,
         };
       } catch (parseError) {
@@ -204,6 +264,9 @@ class HabitsService {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to clear all habits');
       }
+      
+      // Clear cache
+      await AsyncStorage.removeItem(HABITS_CACHE_KEY);
     } catch (error) {
       console.error('Clear all habits error:', error);
       throw error;
@@ -277,7 +340,12 @@ class HabitsService {
         throw new Error(errorData.message || 'Failed to import habits');
       }
       const data: HabitResponse = await response.json();
-      return data.data as Habit[];
+      const habits = data.data as Habit[];
+      
+      // Update cache
+      await this._setCachedHabits(habits);
+      
+      return habits;
     } catch (error) {
       console.error('Import habits error:', error);
       throw error;

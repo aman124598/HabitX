@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { UserRepository, IUser } from '../models/User';
 import { asyncHandler, createError } from '../middleware/errorHandler';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 
 // @desc    Get current logged in user (or auto-create from Clerk session)
 // @route   GET /api/auth/me
@@ -12,26 +13,33 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
 
   const clerkUserId = req.auth.userId;
 
-  // Try to find existing user by Clerk ID
+  // Find user by Clerk ID
   let user = await UserRepository.findByClerkId(clerkUserId);
 
-  // Auto-create Firestore record on first login
-  if (!user) {
-    const clerkUser = (req as any).clerkUser;
-    const email = clerkUser?.emailAddresses?.[0]?.emailAddress || '';
-    const username =
-      clerkUser?.username ||
-      clerkUser?.firstName ||
-      email.split('@')[0] ||
-      `user_${clerkUserId.slice(-8)}`;
+  // If user exists but missing fields, sync from Clerk
+  if (user && (!user.username || !user.email || user.username.startsWith('user_'))) {
+    try {
+      const clerkUser = await clerkClient.users.getUser(clerkUserId);
+      const email = clerkUser.emailAddresses[0]?.emailAddress;
+      const username = clerkUser.username || clerkUser.firstName || email?.split('@')[0];
 
-    user = await UserRepository.create({
-      clerkId: clerkUserId,
-      username,
-      email,
-      emailVerified: true,
-    });
-    console.log(`✅ Auto-created user record for Clerk ID: ${clerkUserId}`);
+      if (username || email) {
+        const updateData: Partial<IUser> = {};
+        if (!user.username || user.username.startsWith('user_')) updateData.username = username;
+        if (!user.email) updateData.email = email;
+        
+        const updated = await UserRepository.update(user.id, updateData);
+        if (updated) user = updated;
+        console.log(`🔄 Self-healed user record for Clerk ID: ${clerkUserId}`);
+      }
+    } catch (err) {
+      console.warn('Silent sync failed in getMe:', err);
+    }
+  }
+
+  // If user still doesn't exist (should be handled by middleware) but somehow reached here
+  if (!user) {
+    throw createError('User not found', 404);
   }
 
   res.status(200).json({ success: true, data: user });
@@ -45,7 +53,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
     throw createError('Not authenticated', 401);
   }
 
-  const { username, email, bio, avatar, isPublic } = req.body;
+  const { username, bio, avatar, isPublic } = req.body;
 
   // Check for username conflicts
   if (username) {
@@ -56,8 +64,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const updateData: Partial<IUser> = {};
-  if (username !== undefined) updateData.username = username;
-  if (email !== undefined) updateData.email = email;
+  if (username !== undefined) updateData.username = username.trim();
   if (bio !== undefined) updateData.bio = bio.trim();
   if (avatar !== undefined) updateData.avatar = avatar;
   if (isPublic !== undefined) updateData.isPublic = isPublic;
@@ -65,8 +72,19 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   let user = await UserRepository.findByClerkId(req.auth.userId);
   if (!user) throw createError('User not found', 404);
 
+  // Update in local DB
   const updated = await UserRepository.update(user.id, updateData);
   if (!updated) throw createError('User not found', 404);
+
+  // Sync with Clerk if username changed
+  if (username) {
+    try {
+      await clerkClient.users.updateUser(req.auth.userId, { username: username.trim() });
+    } catch (err) {
+      console.warn('Could not sync username with Clerk:', err);
+      // We don't fail the whole request because local DB is updated
+    }
+  }
 
   res.status(200).json({ success: true, data: updated });
 });
