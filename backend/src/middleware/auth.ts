@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserRepository, IUser } from '../models/User';
-import { ClerkExpressRequireAuth, ClerkExpressWithAuth, StrictAuthProp, LooseAuthProp } from '@clerk/clerk-sdk-node';
+import { ClerkExpressRequireAuth, ClerkExpressWithAuth, StrictAuthProp } from '@clerk/clerk-sdk-node';
 
 declare global {
   namespace Express {
@@ -20,41 +20,41 @@ export const authenticateToken = async (
     if (err) {
       return res.status(401).json({ success: false, error: 'Unauthenticated' });
     }
-    
+
     try {
       const clerkUserId = req.auth.userId;
-      
-      // We look up the MongoDB user using the newly added clerkUserId/firebaseUid column.
-      let user = await UserRepository.findByFirebaseUid(clerkUserId);
-      
+
+      // Find user by Clerk ID
+      let user = await UserRepository.findByClerkId(clerkUserId);
+
       if (!user) {
-        // Auto-create user from Clerk SDK
+        // Auto-create user record on first authenticated request
         const { users } = require('@clerk/clerk-sdk-node');
         try {
           const clerkUser = await users.getUser(clerkUserId);
           const email = clerkUser.emailAddresses[0]?.emailAddress;
-          const username = clerkUser.username || email?.split('@')[0] || `user_${clerkUserId.substring(0,6)}`;
-          
+          const username = clerkUser.username || email?.split('@')[0] || `user_${clerkUserId.substring(0, 6)}`;
+
           let uniqueUsername = username;
           let counter = 1;
           while (await UserRepository.findByUsername(uniqueUsername)) {
             uniqueUsername = `${username}${counter}`;
             counter++;
           }
-          
+
           const userPayload: Omit<IUser, 'id' | 'createdAt' | 'updatedAt'> = {
             username: uniqueUsername,
             email: email || '',
             emailVerified: true,
-            firebaseUid: clerkUserId,
+            clerkId: clerkUserId,
             totalXP: 0,
             level: 1,
             isPublic: true,
           };
-          
+
           user = await UserRepository.create(userPayload);
         } catch (autoCreateErr) {
-          console.error("Auto-create user failed:", autoCreateErr);
+          console.error('Auto-create user failed:', autoCreateErr);
           return res.status(500).json({ success: false, error: 'Failed to sync user with database' });
         }
       }
@@ -67,7 +67,7 @@ export const authenticateToken = async (
 
       next();
     } catch (dbError) {
-       return res.status(500).json({ success: false, error: 'Internal Server Error' });
+      return res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
   });
 };
@@ -84,40 +84,40 @@ export const optionalAuth = async (
     if (err || !req.auth?.userId) {
       return next();
     }
-    
+
     try {
       const clerkUserId = req.auth.userId;
-      let user = await UserRepository.findByFirebaseUid(clerkUserId);
-      
+      let user = await UserRepository.findByClerkId(clerkUserId);
+
       if (!user) {
         const { users } = require('@clerk/clerk-sdk-node');
         try {
           const clerkUser = await users.getUser(clerkUserId);
           const email = clerkUser.emailAddresses[0]?.emailAddress;
-          const username = clerkUser.username || email?.split('@')[0] || `user_${clerkUserId.substring(0,6)}`;
-          
+          const username = clerkUser.username || email?.split('@')[0] || `user_${clerkUserId.substring(0, 6)}`;
+
           let uniqueUsername = username;
           let counter = 1;
           while (await UserRepository.findByUsername(uniqueUsername)) {
             uniqueUsername = `${username}${counter}`;
             counter++;
           }
-          
+
           const userPayload: Omit<IUser, 'id' | 'createdAt' | 'updatedAt'> = {
             username: uniqueUsername,
             email: email || '',
             emailVerified: true,
-            firebaseUid: clerkUserId,
+            clerkId: clerkUserId,
             totalXP: 0,
             level: 1,
             isPublic: true,
           };
           user = await UserRepository.create(userPayload);
         } catch (e) {
-          // just swallow error for optional auth
+          // swallow error for optional auth
         }
       }
-      
+
       if (user) {
         req.user = {
           id: user.id,

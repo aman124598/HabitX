@@ -120,185 +120,33 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Email verification web route (for email links)
-app.get('/verify-email', async (req, res) => {
-  try {
-    const { token, email } = req.query;
-
-    if (!token || !email) {
-      return res.status(400).send(`
-        <html>
-          <head><title>Email Verification - Error</title></head>
-          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
-            <div style="text-align: center;">
-              <h1 style="color: #dc2626;">❌ Verification Error</h1>
-              <p>Invalid verification link. Please make sure you clicked the correct link from your email.</p>
-              <a href="habitx://" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Open Habit X App</a>
-            </div>
-          </body>
-        </html>
-      `);
-    }
-
-    // Import UserRepository for verification
-    const { UserRepository } = await import('./models/User');
-    const crypto = await import('crypto');
-
-    // Hash the token to match what's stored in database
-    const hashedToken = crypto.createHash('sha256').update(token as string).digest('hex');
-
-    // Find user by email and verify token
-    const user = await UserRepository.findByEmail(email as string);
-    
-    if (!user || user.verificationToken !== hashedToken || 
-        !user.verificationTokenExpiry || user.verificationTokenExpiry < new Date()) {
-      return res.status(400).send(`
-        <html>
-          <head><title>Email Verification - Error</title></head>
-          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
-            <div style="text-align: center;">
-              <h1 style="color: #dc2626;">❌ Verification Failed</h1>
-              <p>This verification link has expired or is invalid.</p>
-              <p>Please request a new verification email from the app.</p>
-              <a href="habitx://" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Open Habit X App</a>
-            </div>
-          </body>
-        </html>
-      `);
-    }
-
-    // Mark email as verified
-    await UserRepository.update(user.id, {
-      emailVerified: true,
-      verificationToken: undefined,
-      verificationTokenExpiry: undefined,
-    });
-
-    // Success page without automatic redirect
-    res.send(`
-      <html>
-        <head>
-          <title>Email Verification - Success</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            .success-container {
-              font-family: Arial, sans-serif;
-              max-width: 600px;
-              margin: 50px auto;
-              padding: 20px;
-              text-align: center;
-            }
-            .success-header {
-              background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-              padding: 30px;
-              border-radius: 10px;
-              margin-bottom: 20px;
-            }
-            .success-title {
-              color: white;
-              margin: 0;
-              font-size: 24px;
-            }
-            .app-button {
-              background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-              color: white;
-              padding: 15px 30px;
-              text-decoration: none;
-              border-radius: 8px;
-              font-weight: bold;
-              display: inline-block;
-              margin: 20px 10px;
-              cursor: pointer;
-              border: none;
-              font-size: 16px;
-            }
-            .app-button:hover {
-              opacity: 0.9;
-            }
-            .instructions {
-              background: #f8f9fa;
-              padding: 20px;
-              border-radius: 8px;
-              margin: 20px 0;
-              border-left: 4px solid #4F46E5;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="success-container">
-            <div class="success-header">
-              <h1 class="success-title">✅ Email Verified Successfully!</h1>
-            </div>
-            <p style="font-size: 18px; color: #333;">Welcome to Habit X, <strong>${user.username}</strong>!</p>
-            <p style="color: #666; font-size: 16px;">Your email has been successfully verified.</p>
-            
-            <div class="instructions">
-              <h3 style="color: #333; margin-top: 0;">Next Steps:</h3>
-              <p style="color: #666; text-align: left;">
-                📱 <strong>If you have the Habit X mobile app installed:</strong><br/>
-                Click the button below to open the app and you'll be automatically logged in.
-              </p>
-              <p style="color: #666; text-align: left;">
-                🌐 <strong>If using a web browser:</strong><br/>
-                You can now close this page. Your email is verified and you can login to your account using your credentials.
-              </p>
-            </div>
-            
-            <div style="margin: 30px 0;">
-              <button onclick="tryOpenApp()" class="app-button">
-                📱 Open Habit X App
-              </button>
-            </div>
-            
-            <p style="color: #999; font-size: 14px;">
-              You can safely close this page. Your email verification is complete.
-            </p>
-          </div>
-          
-          <script>
-            function tryOpenApp() {
-              // Try to open the app
-              const appUrl = "habitx://verified?email=${encodeURIComponent(email as string)}";
-              
-              // Create a hidden link and click it
-              const link = document.createElement('a');
-              link.href = appUrl;
-              link.style.display = 'none';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              
-              // Show feedback
-              const button = document.querySelector('.app-button');
-              const originalText = button.innerHTML;
-              button.innerHTML = '✅ Opening app...';
-              
-              // Reset button after 3 seconds
-              setTimeout(() => {
-                button.innerHTML = originalText;
-              }, 3000);
-            }
-          </script>
-        </body>
-      </html>
-    `);
-
-  } catch (error) {
-    console.error('❌ Email verification error:', error);
-    res.status(500).send(`
-      <html>
-        <head><title>Email Verification - Error</title></head>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
-          <div style="text-align: center;">
-            <h1 style="color: #dc2626;">❌ Server Error</h1>
-            <p>Something went wrong during verification. Please try again later.</p>
-            <a href="habitx://" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Open Habit X App</a>
-          </div>
-        </body>
-      </html>
-    `);
-  }
+// Email verification web route — Clerk now handles verification.
+// This page is a fallback for any old Firebase deep links still in circulation.
+app.get('/verify-email', (_req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>Email Verification — Habit X</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; background: #0f172a; color: #e2e8f0; }
+          h1 { color: #8B5CF6; }
+          .card { background: #1e293b; border-radius: 12px; padding: 32px; border: 1px solid #334155; }
+          a.btn { display: inline-block; margin-top: 20px; background: linear-gradient(135deg,#4F46E5,#7C3AED); color: #fff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>✅ Email Verification</h1>
+          <p>Email verification is now handled directly inside the <strong>Habit X</strong> app via Clerk.</p>
+          <p>Please open the app and follow the sign-in instructions. If you registered recently, check your email for a verification code from Clerk.</p>
+          <a class="btn" href="habitx://">Open Habit X App</a>
+        </div>
+      </body>
+    </html>
+  `);
 });
+
 
 // Base API info route
 app.get('/api', (req, res) => {

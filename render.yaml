@@ -1,36 +1,30 @@
 services:
   - type: web
-    name: habit-tracker-backend
+    name: habitx-backend
     env: node
     plan: free
     rootDir: backend
-    buildCommand: npm ci && npm run build
+    buildCommand: yarn --frozen-lockfile install
     startCommand: node dist/server.js
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
       - key: PORT
         value: 10000
       - key: NODE_ENV
         value: production
       - key: BACKEND_URL
-        value: https://habit-tracker-backend.onrender.com
-      # Set the following in Render dashboard (do not commit secrets)
-      - key: MONGODB_URI
-        sync: false
-      - key: JWT_SECRET
-        sync: false
+        value: https://habitx.onrender.com
       - key: ALLOWED_ORIGINS
         value: "*"
+      # Set secrets in Render dashboard — do not commit values
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
       - key: FIREBASE_PROJECT_ID
         sync: false
-      - key: FIREBASE_DYNAMIC_LINK_DOMAIN
-        sync: false
-      - key: FIREBASE_API_KEY
-        sync: false
-      - key: GMAIL_USER
-        sync: false
-      - key: GMAIL_APP_PASSWORD
+      - key: FIREBASE_CREDENTIALS_BASE64
         sync: false

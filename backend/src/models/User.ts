@@ -1,21 +1,14 @@
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 import { getFirestore, Collections, generateId, timestampToDate, dateToTimestamp } from '../config/firestore';
 
-// User interface (Firestore version)
+// User interface — auth is handled entirely by Clerk
 export interface IUser {
   id: string;
   username: string;
   email: string;
-  password?: string;
   bio?: string;
   avatar?: string;
   emailVerified: boolean;
-  verificationToken?: string;
-  verificationTokenExpiry?: Date;
-  passwordResetToken?: string;
-  passwordResetTokenExpiry?: Date;
-  firebaseUid?: string;
+  clerkId?: string;
   totalXP?: number;
   level?: number;
   isPublic?: boolean;
@@ -27,15 +20,10 @@ export interface IUser {
 interface UserDocument {
   username: string;
   email: string;
-  password?: string;
   bio?: string;
   avatar?: string;
   emailVerified: boolean;
-  verificationToken?: string;
-  verificationTokenExpiry?: FirebaseFirestore.Timestamp;
-  passwordResetToken?: string;
-  passwordResetTokenExpiry?: FirebaseFirestore.Timestamp;
-  firebaseUid?: string;
+  clerkId?: string;
   totalXP?: number;
   level?: number;
   isPublic?: boolean;
@@ -62,15 +50,10 @@ export const UserRepository = {
       id: doc.id,
       username: data.username,
       email: data.email,
-      password: data.password,
       bio: data.bio,
       avatar: data.avatar,
       emailVerified: data.emailVerified ?? false,
-      verificationToken: data.verificationToken,
-      verificationTokenExpiry: timestampToDate(data.verificationTokenExpiry),
-      passwordResetToken: data.passwordResetToken,
-      passwordResetTokenExpiry: timestampToDate(data.passwordResetTokenExpiry),
-      firebaseUid: data.firebaseUid,
+      clerkId: data.clerkId,
       totalXP: data.totalXP ?? 0,
       level: data.level ?? 1,
       isPublic: data.isPublic ?? true,
@@ -84,22 +67,17 @@ export const UserRepository = {
    */
   toFirestore: (user: Partial<IUser>): Partial<UserDocument> => {
     const doc: Partial<UserDocument> = {};
-    
+
     if (user.username !== undefined) doc.username = user.username;
     if (user.email !== undefined) doc.email = user.email?.toLowerCase();
-    if (user.password !== undefined) doc.password = user.password;
     if (user.bio !== undefined) doc.bio = user.bio;
     if (user.avatar !== undefined) doc.avatar = user.avatar;
     if (user.emailVerified !== undefined) doc.emailVerified = user.emailVerified;
-    if (user.verificationToken !== undefined) doc.verificationToken = user.verificationToken;
-    if (user.verificationTokenExpiry !== undefined) doc.verificationTokenExpiry = dateToTimestamp(user.verificationTokenExpiry);
-    if (user.passwordResetToken !== undefined) doc.passwordResetToken = user.passwordResetToken;
-    if (user.passwordResetTokenExpiry !== undefined) doc.passwordResetTokenExpiry = dateToTimestamp(user.passwordResetTokenExpiry);
-    if (user.firebaseUid !== undefined) doc.firebaseUid = user.firebaseUid;
+    if (user.clerkId !== undefined) doc.clerkId = user.clerkId;
     if (user.totalXP !== undefined) doc.totalXP = user.totalXP;
     if (user.level !== undefined) doc.level = user.level;
     if (user.isPublic !== undefined) doc.isPublic = user.isPublic;
-    
+
     return doc;
   },
 
@@ -109,26 +87,14 @@ export const UserRepository = {
   async create(userData: Omit<IUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<IUser> {
     const now = new Date();
     const id = generateId();
-    
-    // Hash password if provided
-    let hashedPassword = userData.password;
-    if (hashedPassword) {
-      const salt = await bcrypt.genSalt(12);
-      hashedPassword = await bcrypt.hash(hashedPassword, salt);
-    }
 
     const docData: UserDocument = {
       username: userData.username.trim(),
       email: userData.email.toLowerCase().trim(),
-      password: hashedPassword,
       bio: userData.bio?.trim(),
       avatar: userData.avatar,
       emailVerified: userData.emailVerified ?? false,
-      verificationToken: userData.verificationToken,
-      verificationTokenExpiry: dateToTimestamp(userData.verificationTokenExpiry),
-      passwordResetToken: userData.passwordResetToken,
-      passwordResetTokenExpiry: dateToTimestamp(userData.passwordResetTokenExpiry),
-      firebaseUid: userData.firebaseUid,
+      clerkId: userData.clerkId,
       totalXP: userData.totalXP ?? 0,
       level: userData.level ?? 1,
       isPublic: userData.isPublic ?? true,
@@ -137,11 +103,10 @@ export const UserRepository = {
     };
 
     await UserRepository.collection().doc(id).set(docData);
-    
+
     return {
       id,
       ...userData,
-      password: hashedPassword,
       createdAt: now,
       updatedAt: now,
     };
@@ -163,7 +128,7 @@ export const UserRepository = {
       .where('email', '==', email.toLowerCase())
       .limit(1)
       .get();
-    
+
     if (snapshot.empty) return null;
     return UserRepository.fromFirestore(snapshot.docs[0]);
   },
@@ -176,47 +141,22 @@ export const UserRepository = {
       .where('username', '==', username)
       .limit(1)
       .get();
-    
+
     if (snapshot.empty) return null;
     return UserRepository.fromFirestore(snapshot.docs[0]);
   },
 
   /**
-   * Find user by Firebase UID
+   * Find user by Clerk ID
    */
-  async findByFirebaseUid(firebaseUid: string): Promise<IUser | null> {
+  async findByClerkId(clerkId: string): Promise<IUser | null> {
     const snapshot = await UserRepository.collection()
-      .where('firebaseUid', '==', firebaseUid)
+      .where('clerkId', '==', clerkId)
       .limit(1)
       .get();
-    
+
     if (snapshot.empty) return null;
     return UserRepository.fromFirestore(snapshot.docs[0]);
-  },
-
-  /**
-   * Find user by verification token
-   */
-  async findByVerificationToken(token: string): Promise<IUser | null> {
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const now = new Date();
-    
-    const snapshot = await UserRepository.collection()
-      .where('verificationToken', '==', hashedToken)
-      .limit(1)
-      .get();
-    
-    if (snapshot.empty) return null;
-    
-    const user = UserRepository.fromFirestore(snapshot.docs[0]);
-    if (!user) return null;
-    
-    // Check if token is expired
-    if (user.verificationTokenExpiry && user.verificationTokenExpiry < now) {
-      return null;
-    }
-    
-    return user;
   },
 
   /**
@@ -224,18 +164,12 @@ export const UserRepository = {
    */
   async update(id: string, updates: Partial<IUser>): Promise<IUser | null> {
     const docRef = UserRepository.collection().doc(id);
-    
-    // Hash password if being updated
-    if (updates.password) {
-      const salt = await bcrypt.genSalt(12);
-      updates.password = await bcrypt.hash(updates.password, salt);
-    }
-    
+
     const updateData = {
       ...UserRepository.toFirestore(updates),
       updatedAt: dateToTimestamp(new Date()),
     };
-    
+
     await docRef.update(updateData);
     return UserRepository.findById(id);
   },
@@ -249,48 +183,20 @@ export const UserRepository = {
   },
 
   /**
-   * Compare password
-   */
-  async comparePassword(user: IUser, candidatePassword: string): Promise<boolean> {
-    if (!user.password) return false;
-    return bcrypt.compare(candidatePassword, user.password);
-  },
-
-  /**
-   * Generate verification token
-   */
-  generateVerificationToken(): { token: string; hashedToken: string; expiry: Date } {
-    const token = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    return { token, hashedToken, expiry };
-  },
-
-  /**
-   * Generate password reset token
-   */
-  generatePasswordResetToken(): { token: string; hashedToken: string; expiry: Date } {
-    const token = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    return { token, hashedToken, expiry };
-  },
-
-  /**
    * Get all users (with pagination)
    */
   async findAll(limit: number = 50, startAfter?: string): Promise<IUser[]> {
     let query = UserRepository.collection()
       .orderBy('createdAt', 'desc')
       .limit(limit);
-    
+
     if (startAfter) {
       const startDoc = await UserRepository.collection().doc(startAfter).get();
       if (startDoc.exists) {
         query = query.startAfter(startDoc);
       }
     }
-    
+
     const snapshot = await query.get();
     return snapshot.docs.map(doc => UserRepository.fromFirestore(doc)!).filter(Boolean);
   },
@@ -304,8 +210,8 @@ export const UserRepository = {
 
     const currentXP = user.totalXP || 0;
     const newTotalXP = currentXP + xpToAdd;
-    
-    // Calculate level based on XP (simple formula: level = floor(totalXP / 100) + 1)
+
+    // Level formula: level = floor(totalXP / 100) + 1
     const newLevel = Math.floor(newTotalXP / 100) + 1;
 
     return UserRepository.update(id, {

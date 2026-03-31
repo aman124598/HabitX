@@ -1,15 +1,14 @@
 import { initializeFirestore } from './firestore';
 
 /**
- * Connect to database (Firestore)
- * This replaces the MongoDB connection
+ * Connect to the database (Firestore via Firebase Admin SDK)
  */
 export const connectDB = async (): Promise<void> => {
   try {
     initializeFirestore();
-    console.log('✅ Database connected (Firebase Firestore)');
+    console.log('✅ Firestore database connected');
   } catch (error) {
-    console.error('❌ Error connecting to database:', error);
+    console.error('❌ Error connecting to Firestore:', error);
     throw error;
   }
 };

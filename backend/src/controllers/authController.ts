@@ -15,7 +15,7 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
   // Try to find existing user by Clerk ID
   let user = await UserRepository.findByClerkId(clerkUserId);
 
-  // Auto-create MongoDB record on first login
+  // Auto-create Firestore record on first login
   if (!user) {
     const clerkUser = (req as any).clerkUser;
     const email = clerkUser?.emailAddresses?.[0]?.emailAddress || '';
@@ -31,7 +31,7 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
       email,
       emailVerified: true,
     });
-    console.log(`✅ Auto-created MongoDB user for Clerk ID: ${clerkUserId}`);
+    console.log(`✅ Auto-created user record for Clerk ID: ${clerkUserId}`);
   }
 
   res.status(200).json({ success: true, data: user });
@@ -71,7 +71,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   res.status(200).json({ success: true, data: updated });
 });
 
-// @desc    Change password (not applicable for Clerk — password changes happen via Clerk dashboard/flow)
+// @desc    Password changes are managed by Clerk
 // @route   PUT /api/auth/password
 // @access  Private
 export const changePassword = asyncHandler(async (_req: Request, res: Response) => {
@@ -96,7 +96,7 @@ export const getUserGamification = asyncHandler(async (req: Request, res: Respon
   });
 });
 
-// @desc    Update user gamification data (add XP)
+// @desc    Add XP to user
 // @route   POST /api/auth/gamification/xp
 // @access  Private
 export const addUserXP = asyncHandler(async (req: Request, res: Response) => {
@@ -118,14 +118,13 @@ export const addUserXP = asyncHandler(async (req: Request, res: Response) => {
       totalXP: updatedUser.totalXP,
       level: updatedUser.level,
       xpAdded: xp,
-      leveledUp: updatedUser.level > oldLevel,
+      leveledUp: updatedUser.level! > oldLevel,
       previousLevel: oldLevel,
     },
   });
 });
 
-// These endpoints are no longer needed — Clerk handles email verification and password reset
-// Stubs kept to avoid 404s if old clients call them
+// These endpoints are deprecated — Clerk handles registration and login client-side
 export const register = asyncHandler(async (_req: Request, res: Response) => {
   res.status(410).json({ success: false, message: 'Registration is handled by Clerk on the client.' });
 });

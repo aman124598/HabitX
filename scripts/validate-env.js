@@ -2,7 +2,7 @@
 
 /**
  * Environment Validation Script for Habit X Production Deployment
- * Validates that all required environment variables are set correctly
+ * Validates that all required environment variables are set correctly.
  */
 
 const fs = require('fs');
@@ -12,22 +12,14 @@ require('dotenv').config();
 console.log('🔍 Validating Production Environment Configuration...\n');
 
 const requiredEnvVars = {
-  // Frontend Environment Variables
-  'EXPO_PUBLIC_API_BASE_URL': {
+  EXPO_PUBLIC_API_BASE_URL: {
     description: 'Backend API URL',
-    example: 'https://habit-tracker-backend-2.onrender.com/api',
-    production: true
+    example: 'https://habitx.onrender.com/api',
   },
-  'EXPO_PUBLIC_FIREBASE_API_KEY': {
-    description: 'Firebase API Key',
-    example: 'AIzaSyAM8alIeozHK0nrFhac8k05ntScfMzoLRY',
-    production: true
+  EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: {
+    description: 'Clerk publishable key (starts with pk_)',
+    example: 'pk_live_...',
   },
-  'EXPO_PUBLIC_FIREBASE_PROJECT_ID': {
-    description: 'Firebase Project ID',
-    example: 'habitx-ba1d8',
-    production: true
-  }
 };
 
 const warnings = [];
@@ -40,45 +32,66 @@ console.log('📋 Checking Required Environment Variables:\n');
 for (const [envVar, config] of Object.entries(requiredEnvVars)) {
   const value = process.env[envVar];
   const status = value ? '✅' : '❌';
-  
+
   console.log(`${status} ${envVar}: ${value ? 'SET' : 'NOT SET'}`);
-  
+
   if (!value) {
     errors.push(`Missing required environment variable: ${envVar}`);
     console.log(`   Description: ${config.description}`);
     console.log(`   Example: ${config.example}\n`);
     validationPassed = false;
   } else {
-    // Additional validation for specific variables
     if (envVar === 'EXPO_PUBLIC_API_BASE_URL' && value.includes('localhost')) {
-      warnings.push(`${envVar} contains localhost - this will not work in production`);
+      warnings.push(`${envVar} contains localhost — this will not work in production`);
       console.log('   ⚠️  WARNING: Contains localhost URL\n');
     }
+    if (envVar === 'EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY' && !value.startsWith('pk_')) {
+      warnings.push(`${envVar} does not look like a valid Clerk publishable key`);
+    }
   }
 }
 
-// Check Firebase configuration file
-console.log('\n🔥 Checking Firebase Configuration:\n');
+// Check Firestore credentials
+console.log('\n🔥 Checking Firestore (Firebase Admin) Credentials:\n');
 
-const firebaseConfigPath = path.join(__dirname, '../backend/credentials/firebase-adminsdk.json');
-if (fs.existsSync(firebaseConfigPath)) {
-  console.log('✅ Firebase Admin SDK credentials file found');
+const localCreds = path.join(__dirname, '../backend/credentials/firebase-adminsdk.json');
+const hasBase64 = !!process.env.FIREBASE_CREDENTIALS_BASE64;
+const hasLocalFile = fs.existsSync(localCreds);
+
+if (hasLocalFile) {
+  console.log('✅ Local firebase-adminsdk.json found');
   try {
-    const firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, 'utf8'));
-    if (firebaseConfig.project_id === 'habitx-ba1d8' || firebaseConfig.project_id === 'habitx') {
-      console.log('✅ Firebase project ID matches expected value');
+    const creds = JSON.parse(fs.readFileSync(localCreds, 'utf8'));
+    if (creds.project_id) {
+      console.log(`✅ Project ID: ${creds.project_id}`);
     } else {
-      warnings.push('Firebase project ID does not match expected value');
+      warnings.push('firebase-adminsdk.json is missing project_id');
     }
-  } catch (error) {
-    errors.push('Firebase credentials file is not valid JSON');
+  } catch {
+    errors.push('firebase-adminsdk.json is not valid JSON');
     validationPassed = false;
   }
+} else if (hasBase64) {
+  console.log('✅ FIREBASE_CREDENTIALS_BASE64 env var is set (production mode)');
 } else {
-  warnings.push('Firebase Admin SDK credentials file not found (backend might use API key fallback)');
+  warnings.push('No Firestore credentials found. Set FIREBASE_CREDENTIALS_BASE64 in production or place firebase-adminsdk.json locally.');
+  console.log('⚠️  No Firestore credentials found');
 }
 
-// Check package.json version
+// Check Backend Clerk secret key (for backend env)
+console.log('\n🔑 Checking Backend Clerk Configuration:\n');
+const backendEnvPath = path.join(__dirname, '../backend/.env');
+if (fs.existsSync(backendEnvPath)) {
+  const backendEnv = fs.readFileSync(backendEnvPath, 'utf8');
+  if (backendEnv.includes('CLERK_SECRET_KEY=sk_')) {
+    console.log('✅ CLERK_SECRET_KEY appears to be set in backend/.env');
+  } else {
+    warnings.push('CLERK_SECRET_KEY not found in backend/.env — required for Clerk JWT verification');
+    console.log('⚠️  CLERK_SECRET_KEY not found in backend/.env');
+  }
+}
+
+// Check package versions
 console.log('\n📦 Checking App Version:\n');
 
 const packageJsonPath = path.join(__dirname, '../package.json');
@@ -87,28 +100,16 @@ const appJsonPath = path.join(__dirname, '../app.json');
 if (fs.existsSync(packageJsonPath) && fs.existsSync(appJsonPath)) {
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   const appJson = JSON.parse(fs.readFileSync(appJsonPath, 'utf8'));
-  
+
   console.log(`✅ Package version: ${packageJson.version}`);
   console.log(`✅ App version: ${appJson.expo.version}`);
-  console.log(`✅ Android version code: ${appJson.expo.android.versionCode}`);
-  
+
   if (packageJson.version !== appJson.expo.version) {
-    warnings.push('Package.json version does not match app.json version');
+    warnings.push('package.json version does not match app.json version');
   }
 } else {
   errors.push('Cannot find package.json or app.json');
   validationPassed = false;
-}
-
-// Check backend health (if available)
-console.log('\n🏥 Backend Health Check:\n');
-
-const backendUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
-if (backendUrl && !backendUrl.includes('localhost')) {
-  console.log(`Checking: ${backendUrl.replace('/api', '/health')}`);
-  console.log('ℹ️  Run "npm run health-check" to test backend connectivity');
-} else {
-  console.log('⚠️  Skipping backend health check (localhost URL or missing)');
 }
 
 // Summary
@@ -131,19 +132,10 @@ if (warnings.length > 0) {
 console.log('\n📋 Next Steps:');
 if (!validationPassed || errors.length > 0) {
   console.log('   1. Fix all critical errors listed above');
-  console.log('   2. Set missing environment variables');
-  console.log('   3. Run this validation script again');
-  console.log('   4. Proceed with production build once all errors are resolved');
+  console.log('   2. Run this validation script again');
 } else {
   console.log('   1. Review warnings if any');
-  console.log('   2. Run "npm run health-check" to test backend');
-  console.log('   3. Proceed with production build: "npm run build:production"');
+  console.log('   2. Run "npm run build:production" to build');
 }
 
-console.log('\n🔗 Useful Commands:');
-console.log('   • Test backend: npm run health-check');
-console.log('   • Build production: npm run build:production'); 
-console.log('   • Deploy to Play Store: npm run deploy:android');
-
-// Exit with appropriate code
 process.exit(validationPassed && errors.length === 0 ? 0 : 1);
