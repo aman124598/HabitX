@@ -14,7 +14,7 @@
   </p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-1.0.1-blue.svg?style=flat-square" alt="Version">
+    <img src="https://img.shields.io/badge/version-1.0.4-blue.svg?style=flat-square" alt="Version">
     <img src="https://img.shields.io/badge/platform-Android-green.svg?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/badge/license-MIT-purple.svg?style=flat-square" alt="License">
     <img src="https://img.shields.io/badge/made%20with-Expo-black.svg?style=flat-square&logo=expo" alt="Made with Expo">

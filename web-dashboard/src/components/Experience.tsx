@@ -2,6 +2,23 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Stars, Sparkles } from '@react-three/drei'
 import { Download, Github, Zap, Shield, Sparkles as SparkleIcon, CheckCircle, BarChart3, Trophy } from 'lucide-react'
 import * as THREE from 'three'
+import { useEffect, useState } from 'react'
+
+const GITHUB_REPO = 'aman124598/HabitX'
+const FALLBACK_RELEASE = {
+  url: 'https://github.com/aman124598/HabitX/releases/download/v1.0.2/HabitX.v1.0.2.apk',
+  version: 'v1.0.2',
+}
+
+type GitHubReleaseAsset = {
+  name: string
+  browser_download_url: string
+}
+
+type GitHubRelease = {
+  tag_name: string
+  assets: GitHubReleaseAsset[]
+}
 
 function BackgroundParticles() {
   return (
@@ -21,8 +38,34 @@ function Rig() {
 }
 
 export default function Experience() {
-  const releaseUrl = "https://github.com/aman124598/HabitX/releases/download/v1.0.2/HabitX.v1.0.2.apk"
-  const releaseVersion = "v1.0.2"
+  const [releaseUrl, setReleaseUrl] = useState(FALLBACK_RELEASE.url)
+  const [releaseVersion, setReleaseVersion] = useState(FALLBACK_RELEASE.version)
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadLatestRelease() {
+      try {
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+        if (!response.ok) return
+
+        const release = (await response.json()) as GitHubRelease
+        const apkAsset = release.assets.find((asset) => asset.name.toLowerCase().endsWith('.apk'))
+        if (!apkAsset || ignore) return
+
+        setReleaseUrl(apkAsset.browser_download_url)
+        setReleaseVersion(release.tag_name)
+      } catch {
+        // Keep the fallback release available when GitHub cannot be reached.
+      }
+    }
+
+    loadLatestRelease()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   return (
     <div className="w-full min-h-screen bg-black text-white selection:bg-red-500 selection:text-white font-sans">

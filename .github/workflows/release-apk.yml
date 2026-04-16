@@ -1,0 +1,216 @@
+name: Mobile Release Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example 1.0.4 or v1.0.4"
+        required: true
+        type: string
+      release_notes:
+        description: "Custom release notes to prepend in the GitHub release"
+        required: false
+        type: string
+      build_profile:
+        description: "EAS build profile to use"
+        required: false
+        default: "production-apk"
+        type: string
+      eas_build_id:
+        description: "Optional existing EAS build ID from Expo Dashboard (skip new build if provided)"
+        required: false
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release-android:
+    name: Build Android and publish release
+    runs-on: ubuntu-latest
+    env:
+      DASHBOARD_DEPLOY_HOOK_URL: ${{ secrets.DASHBOARD_DEPLOY_HOOK_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.4"
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Resolve release metadata
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RAW_VERSION="${{ inputs.version }}"
+            BUILD_PROFILE="${{ inputs.build_profile }}"
+          else
+            RAW_VERSION="${GITHUB_REF_NAME}"
+            BUILD_PROFILE="production-apk"
+          fi
+
+          VERSION="${RAW_VERSION#v}"
+          TAG="v${VERSION}"
+
+          if ! echo "${VERSION}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Version must follow semver format: x.y.z"
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "build_profile=${BUILD_PROFILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Update app versions
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const version = process.env.VERSION;
+
+          const appPath = 'app.json';
+          const packagePath = 'package.json';
+
+          const appJson = JSON.parse(fs.readFileSync(appPath, 'utf8'));
+          const pkgJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+
+          if (!appJson.expo) {
+            throw new Error('app.json missing expo key');
+          }
+
+          appJson.expo.version = version;
+          pkgJson.version = version;
+
+          fs.writeFileSync(appPath, JSON.stringify(appJson, null, 2) + '\n');
+          fs.writeFileSync(packagePath, JSON.stringify(pkgJson, null, 2) + '\n');
+          NODE
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+
+      - name: Commit version updates
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add app.json package.json
+          if git diff --cached --quiet; then
+            echo "No version changes to commit"
+          else
+            git commit -m "chore(release): v${{ steps.meta.outputs.version }}"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+
+      - name: Create release tag
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Tag ${TAG} already exists"
+            exit 1
+          fi
+
+          git tag "${TAG}"
+          git push origin "${TAG}"
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Build APK on EAS
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.eas_build_id == '' }}
+        run: |
+          eas build \
+            --platform android \
+            --profile "${{ steps.meta.outputs.build_profile }}" \
+            --non-interactive \
+            --wait \
+            --json > eas-build.json
+
+      - name: Load existing EAS build from Dashboard
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.eas_build_id != '' }}
+        run: |
+          eas build:view "${{ inputs.eas_build_id }}" --json > eas-build.json
+
+      - name: Extract build URLs
+        id: build
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('eas-build.json', 'utf8'));
+          const build = Array.isArray(data) ? data[0] : data;
+
+          const artifactUrl =
+            build?.artifacts?.buildUrl ||
+            build?.artifacts?.applicationArchiveUrl ||
+            '';
+          const detailsUrl = build?.buildDetailsPageUrl || '';
+
+          if (!artifactUrl) {
+            console.error('Could not find build artifact URL in eas-build.json');
+            process.exit(1);
+          }
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `artifact_url=${artifactUrl}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `details_url=${detailsUrl}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `build_id=${build?.id || ''}\n`);
+          NODE
+
+      - name: Download APK
+        run: |
+          curl -L "${{ steps.build.outputs.artifact_url }}" -o "HabitX-${{ steps.meta.outputs.tag }}.apk"
+
+      - name: Ensure release does not already exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists"
+            exit 1
+          fi
+
+      - name: Prepare custom release header
+        run: |
+          cat <<'EOF' > release-header.md
+          ## Release Summary
+          
+          Version: ${{ steps.meta.outputs.version }}
+          Build profile: ${{ steps.meta.outputs.build_profile }}
+          EAS build ID: ${{ steps.build.outputs.build_id }}
+          EAS build details: ${{ steps.build.outputs.details_url }}
+          
+          ### Notes
+          ${{ github.event_name == 'workflow_dispatch' && inputs.release_notes || 'Automated release from EAS build pipeline.' }}
+          
+          EOF
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.meta.outputs.tag }}" \
+            "HabitX-${{ steps.meta.outputs.tag }}.apk" \
+            --title "HabitX ${{ steps.meta.outputs.tag }}" \
+            --generate-notes \
+            --notes-file release-header.md
+
+      - name: Trigger dashboard deploy hook
+        if: ${{ env.DASHBOARD_DEPLOY_HOOK_URL != '' }}
+        run: curl -X POST "$DASHBOARD_DEPLOY_HOOK_URL"

@@ -217,7 +217,7 @@ export default function SettingsTab() {
     try {
       setIsLoading(true);
       const backup = {
-        version: '1.0.1',
+        version: '1.0.4',
         timestamp: new Date().toISOString(),
         habits: habits,
         settings: settings,
@@ -498,7 +498,7 @@ export default function SettingsTab() {
         {/* App Info */}
         <View style={styles.appInfo}>
           <ThemedText variant="primary" weight="bold" size="lg">HABIT X</ThemedText>
-          <ThemedText variant="tertiary" size="sm">Version 1.0.1</ThemedText>
+          <ThemedText variant="tertiary" size="sm">Version 1.0.4</ThemedText>
         </View>
       </ScrollView>
 
