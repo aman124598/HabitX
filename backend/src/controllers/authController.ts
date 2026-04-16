@@ -3,6 +3,23 @@ import { UserRepository, IUser } from '../models/User';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { clerkClient } from '@clerk/clerk-sdk-node';
 
+function getPreferredClerkEmail(clerkUser: any): string {
+  if (!clerkUser) return '';
+
+  const primaryEmailId = clerkUser.primaryEmailAddressId as string | undefined;
+  if (primaryEmailId && Array.isArray(clerkUser.emailAddresses)) {
+    const primary = clerkUser.emailAddresses.find((emailObj: any) => emailObj?.id === primaryEmailId);
+    if (primary?.emailAddress) return String(primary.emailAddress);
+  }
+
+  if (Array.isArray(clerkUser.emailAddresses)) {
+    const first = clerkUser.emailAddresses.find((emailObj: any) => !!emailObj?.emailAddress);
+    if (first?.emailAddress) return String(first.emailAddress);
+  }
+
+  return '';
+}
+
 // @desc    Get current logged in user (or auto-create from Clerk session)
 // @route   GET /api/auth/me
 // @access  Private (Clerk JWT required)
@@ -20,7 +37,7 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
   if (user && (!user.username || !user.email || user.username.startsWith('user_'))) {
     try {
       const clerkUser = await clerkClient.users.getUser(clerkUserId);
-      const email = clerkUser.emailAddresses[0]?.emailAddress;
+      const email = getPreferredClerkEmail(clerkUser);
       const username = clerkUser.username || clerkUser.firstName || email?.split('@')[0];
 
       if (username || email) {

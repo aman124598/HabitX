@@ -24,6 +24,59 @@ import {
 } from './auth';
 import { getApiUrl } from './config';
 
+type ClerkUserLike = {
+  id: string;
+  username?: string | null;
+  firstName?: string | null;
+  primaryEmailAddress?: { emailAddress?: string | null } | null;
+  emailAddresses?: Array<{ emailAddress?: string | null } | null> | null;
+  createdAt?: number | Date | null;
+  updatedAt?: number | Date | null;
+};
+
+function getClerkEmail(clerkUser: ClerkUserLike | null | undefined): string {
+  return (
+    clerkUser?.primaryEmailAddress?.emailAddress ||
+    clerkUser?.emailAddresses?.find((address) => !!address?.emailAddress)?.emailAddress ||
+    ''
+  );
+}
+
+function buildClerkFallbackUser(clerkUser: ClerkUserLike | null | undefined): User | null {
+  if (!clerkUser) return null;
+
+  const email = getClerkEmail(clerkUser);
+  const username = clerkUser.username || clerkUser.firstName || email.split('@')[0] || 'user';
+  const nowIso = new Date().toISOString();
+
+  return {
+    id: clerkUser.id,
+    username,
+    email,
+    createdAt: clerkUser.createdAt ? new Date(clerkUser.createdAt).toISOString() : nowIso,
+    updatedAt: clerkUser.updatedAt ? new Date(clerkUser.updatedAt).toISOString() : nowIso,
+  };
+}
+
+function mergeUserProfiles(base: User | null, overlay: User | null): User | null {
+  if (!base) return overlay;
+  if (!overlay) return base;
+
+  return {
+    ...overlay,
+    ...base,
+    username: base.username || overlay.username,
+    email: base.email || overlay.email,
+    bio: base.bio ?? overlay.bio,
+    avatar: base.avatar ?? overlay.avatar,
+    isPublic: base.isPublic ?? overlay.isPublic,
+    totalXP: base.totalXP ?? overlay.totalXP,
+    level: base.level ?? overlay.level,
+    createdAt: base.createdAt || overlay.createdAt,
+    updatedAt: base.updatedAt || overlay.updatedAt,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Context shape
 // ---------------------------------------------------------------------------
@@ -63,24 +116,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const clerkFallbackUser = buildClerkFallbackUser(clerkUser);
+    if (clerkFallbackUser) {
+      setUser((current) => mergeUserProfiles(current, clerkFallbackUser));
+    }
+
     setIsLoading(true);
     fetchMe()
-      .then(setUser)
+      .then((userData) => {
+        setUser((current) => mergeUserProfiles(userData, current));
+      })
       .catch((err) => {
         console.warn('Could not fetch user profile from DB:', err.message);
-        // Construct a minimal User from Clerk data so the app isn't broken
-        // while the backend auto-creates the DB record on next API call.
-        if (clerkUser) {
-          setUser({
-            id: clerkUser.id,
-            username:
-              clerkUser.username ||
-              clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] ||
-              'user',
-            email: clerkUser.primaryEmailAddress?.emailAddress || '',
-            createdAt: clerkUser.createdAt?.toISOString() || new Date().toISOString(),
-            updatedAt: clerkUser.updatedAt?.toISOString() || new Date().toISOString(),
-          });
+        if (clerkFallbackUser) {
+          setUser((current) => mergeUserProfiles(current, clerkFallbackUser));
         }
       })
       .finally(() => setIsLoading(false));
@@ -89,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       const userData = await fetchMe();
-      setUser(userData);
+      setUser((current) => mergeUserProfiles(userData, current));
     } catch (error) {
       console.error('Refresh user error:', error);
     }
@@ -100,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       try {
         const userData = await updateProfileApi(credentials);
-        setUser(userData);
+        setUser((current) => mergeUserProfiles(userData, current));
       } finally {
         setIsLoading(false);
       }
