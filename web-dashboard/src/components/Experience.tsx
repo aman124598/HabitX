@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react'
 
 const GITHUB_REPO = 'aman124598/HabitX'
 const FALLBACK_RELEASE = {
-  url: 'https://github.com/aman124598/HabitX/releases/download/v1.0.2/HabitX.v1.0.2.apk',
-  version: 'v1.0.2',
+  url: 'https://github.com/aman124598/HabitX/releases/latest/download/HabitX-latest.apk',
+  version: 'latest',
 }
 
 type GitHubReleaseAsset = {

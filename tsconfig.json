@@ -7,5 +7,5 @@
       "@/*": ["./*"]
     }
   },
-  "exclude": ["backend", "**/node_modules", "dist", "build"]
+  "exclude": ["backend", "web-dashboard", "**/node_modules", "dist", "build"]
 }

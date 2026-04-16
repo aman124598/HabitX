@@ -27,8 +27,6 @@ jobs:
   release-android:
     name: Build Android and publish release
     runs-on: ubuntu-latest
-    env:
-      DASHBOARD_DEPLOY_HOOK_URL: ${{ secrets.DASHBOARD_DEPLOY_HOOK_URL }}
 
     steps:
       - name: Checkout
@@ -162,6 +160,7 @@ jobs:
       - name: Download APK
         run: |
           curl -L "${{ steps.build.outputs.artifact_url }}" -o "HabitX-${{ steps.meta.outputs.tag }}.apk"
+          cp "HabitX-${{ steps.meta.outputs.tag }}.apk" "HabitX-latest.apk"
 
       - name: Ensure release does not already exist
         env:
@@ -199,14 +198,11 @@ jobs:
 
           gh release create "${{ steps.meta.outputs.tag }}" \
             "HabitX-${{ steps.meta.outputs.tag }}.apk" \
+            "HabitX-latest.apk" \
             --title "HabitX ${{ steps.meta.outputs.tag }}" \
             --target "$TARGET_SHA" \
             --generate-notes \
             --notes-file release-header.md
-
-      - name: Trigger dashboard deploy hook
-        if: ${{ env.DASHBOARD_DEPLOY_HOOK_URL != '' }}
-        run: curl -X POST "$DASHBOARD_DEPLOY_HOOK_URL"
 
       - name: Roll back failed release
         if: ${{ failure() && github.event_name == 'workflow_dispatch' }}
