@@ -44,7 +44,7 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
         const updateData: Partial<IUser> = {};
         if (!user.username || user.username.startsWith('user_')) updateData.username = username;
         if (!user.email) updateData.email = email;
-        
+
         const updated = await UserRepository.update(user.id, updateData);
         if (updated) user = updated;
         console.log(`🔄 Self-healed user record for Clerk ID: ${clerkUserId}`);
