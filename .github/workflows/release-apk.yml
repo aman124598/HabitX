@@ -190,15 +190,15 @@ jobs:
         run: |
           cat <<'EOF' > release-header.md
           ## Release Summary
-          
+
           Version: ${{ steps.meta.outputs.version }}
           Build profile: ${{ steps.meta.outputs.build_profile }}
           EAS build ID: ${{ steps.build.outputs.build_id }}
           EAS build details: ${{ steps.build.outputs.details_url }}
-          
+
           ### Notes
           ${{ github.event_name == 'workflow_dispatch' && inputs.release_notes || 'Automated release from EAS build pipeline.' }}
-          
+
           EOF
 
       - name: Create GitHub release
