@@ -20,10 +20,6 @@ on:
         description: "Optional existing EAS build ID from Expo Dashboard (skip new build if provided)"
         required: false
         type: string
-  push:
-    tags:
-      - "v*"
-
 permissions:
   contents: write
 
@@ -106,6 +102,7 @@ jobs:
 
       - name: Commit version updates
         if: ${{ github.event_name == 'workflow_dispatch' }}
+        id: version_commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -113,22 +110,12 @@ jobs:
           git add app.json package.json
           if git diff --cached --quiet; then
             echo "No version changes to commit"
+            echo "sha=" >> "$GITHUB_OUTPUT"
           else
             git commit -m "chore(release): v${{ steps.meta.outputs.version }}"
             git push origin HEAD:${{ github.ref_name }}
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Create release tag
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: |
-          TAG="${{ steps.meta.outputs.tag }}"
-          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
-            echo "Tag ${TAG} already exists"
-            exit 1
-          fi
-
-          git tag "${TAG}"
-          git push origin "${TAG}"
 
       - name: Typecheck
         run: yarn typecheck
@@ -205,12 +192,40 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          TARGET_SHA="${{ steps.version_commit.outputs.sha }}"
+          if [ -z "$TARGET_SHA" ]; then
+            TARGET_SHA="${GITHUB_SHA}"
+          fi
+
           gh release create "${{ steps.meta.outputs.tag }}" \
             "HabitX-${{ steps.meta.outputs.tag }}.apk" \
             --title "HabitX ${{ steps.meta.outputs.tag }}" \
+            --target "$TARGET_SHA" \
             --generate-notes \
             --notes-file release-header.md
 
       - name: Trigger dashboard deploy hook
         if: ${{ env.DASHBOARD_DEPLOY_HOOK_URL != '' }}
         run: curl -X POST "$DASHBOARD_DEPLOY_HOOK_URL"
+
+      - name: Roll back failed release
+        if: ${{ failure() && github.event_name == 'workflow_dispatch' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          SHA="${{ steps.version_commit.outputs.sha }}"
+
+          if [ -n "$SHA" ]; then
+            echo "Reverting version commit $SHA"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            if git revert --no-edit "$SHA"; then
+              git push origin HEAD:${{ github.ref_name }}
+            else
+              echo "Could not revert version commit automatically"
+            fi
+          fi
+
+          gh release delete "$TAG" --yes || true
+          git push origin ":refs/tags/$TAG" || true
